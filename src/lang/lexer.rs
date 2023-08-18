@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 /// An enumeration of all the possible tokens in the language.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenType {
     // Single-character tokens.
     /// A left parenthesis token.
@@ -701,6 +701,7 @@ pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
     pub literal: Option<Literal>,
+
     pub line: usize,
     pub column: usize,
 }
@@ -728,6 +729,7 @@ impl Token {
 pub struct Scanner {
     source: String,
     tokens: Vec<Token>,
+
     start: usize,
     current: usize,
     line: usize,
@@ -736,16 +738,11 @@ pub struct Scanner {
 
 impl Scanner {
     /// Creates a new scanner.
-    ///
-    /// # Arguments
-    /// * `source` - The source code to scan.
-    ///
-    /// # Returns
-    /// A new scanner.
     pub fn new(source: &str) -> Self {
         Self {
             source: source.to_string(),
             tokens: Vec::new(),
+
             start: 0,
             current: 0,
             line: 1,
@@ -754,9 +751,6 @@ impl Scanner {
     }
 
     /// Scans the source code and returns a vector of tokens.
-    ///
-    /// # Returns
-    /// A vector of tokens.
     pub fn scan_tokens(&mut self) -> Vec<Token> {
         while !self.is_at_end() {
             self.start = self.current;
@@ -776,6 +770,7 @@ impl Scanner {
     /// Scans a single token.
     fn scan_token(&mut self) {
         let c = self.advance();
+
         match c {
             // Single-character tokens.
             '(' => self.add_token(TokenType::LeftParenthesis),
@@ -795,11 +790,16 @@ impl Scanner {
                 }
             }
             '=' => {
-                self.match_and_add_tokens(
-                    &['=', '>'],
-                    &[TokenType::EqualEqual, TokenType::ExpressionArrow],
-                );
-                self.add_token(TokenType::Equal);
+                if self.match_char('=') {
+                    // Equal to.
+                    self.add_token(TokenType::EqualEqual);
+                } else if self.match_char('>') {
+                    // Expression arrow, used for closures.
+                    self.add_token(TokenType::ExpressionArrow);
+                } else {
+                    // Assignment.
+                    self.add_token(TokenType::Equal);
+                }
             }
             '<' => {
                 if self.match_char('=') {
@@ -848,15 +848,19 @@ impl Scanner {
                 }
             }
             '-' => {
-                self.match_and_add_tokens(
-                    &['-', '=', '>'],
-                    &[
-                        TokenType::Decrement,
-                        TokenType::MinusEqual,
-                        TokenType::Arrow,
-                    ],
-                );
-                self.add_token(TokenType::Minus);
+                if self.match_char('-') {
+                    // Decrement.
+                    self.add_token(TokenType::Decrement);
+                } else if self.match_char('=') {
+                    // Subtraction assignment.
+                    self.add_token(TokenType::MinusEqual);
+                } else if self.match_char('>') {
+                    // Arrow.
+                    self.add_token(TokenType::Arrow);
+                } else {
+                    // Subtraction.
+                    self.add_token(TokenType::Minus); // Subtraction
+                }
             }
             '*' => {
                 if self.match_char('=') {
@@ -915,7 +919,7 @@ impl Scanner {
             '0'..='9' => self.number(),
             'a'..='z' | 'A'..='Z' | '_' => self.identifier(),
 
-            // Whitespace and newline handling
+            // Whitespace.
             ' ' | '\r' | '\t' => (),
             '\n' => {
                 self.line += 1;
@@ -924,18 +928,34 @@ impl Scanner {
 
             '/' => {
                 if self.match_char('/') {
+                    // Single-line comments.
                     while self.peek() != '\n' && !self.is_at_end() {
                         self.advance();
                     }
                 } else if self.match_char('*') {
-                    self.multi_line_comment();
+                    // Multi-line comments.
+                    while self.peek() != '*' && self.peek_next() != '/' && !self.is_at_end() {
+                        if self.peek() == '\n' {
+                            self.line += 1;
+                            self.column = 1;
+                        }
+                        self.advance();
+                    }
+
+                    if self.is_at_end() {
+                        panic!("Scanner tried to advance past the end of the source code!");
+                    }
+
+                    self.advance();
+                    self.advance();
                 } else if self.match_char('=') {
+                    // Division assignment.
                     self.add_token(TokenType::SlashEqual);
                 } else {
+                    // Division.
                     self.add_token(TokenType::Slash);
                 }
             }
-
             _ => panic!("Unexpected character: {}", c),
         }
     }
@@ -981,20 +1001,6 @@ impl Scanner {
             self.line,
             self.column,
         ));
-    }
-
-    /// Matches and adds tokens.
-    ///
-    /// # Arguments
-    /// * `matches` - A slice of characters to match.
-    /// * `tokens` - A slice of tokens to add.
-    fn match_and_add_tokens(&mut self, matches: &[char], tokens: &[TokenType]) {
-        for (ch, token_type) in matches.iter().zip(tokens.iter()) {
-            if self.match_char(*ch) {
-                self.add_token(*token_type);
-                return;
-            }
-        }
     }
 
     /// Checks if the next character matches the given character.
@@ -1131,28 +1137,6 @@ impl Scanner {
         };
 
         self.add_token(token_type);
-    }
-
-    /// Scans a multi-line comment.
-    ///
-    /// # Panics
-    /// Panics if the multi-line comment is not terminated.
-    fn multi_line_comment(&mut self) {
-        while !self.is_at_end() {
-            let current_char = self.advance();
-            if current_char == '*' && self.peek() == '/' {
-                self.advance();
-                break;
-            }
-            if current_char == '\n' {
-                self.line += 1;
-                self.column = 1;
-            }
-        }
-
-        if self.is_at_end() {
-            panic!("Unterminated multi-line comment!");
-        }
     }
 }
 
