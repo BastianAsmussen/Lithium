@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 /// An enumeration of all the possible tokens in the language.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TokenType {
     // Single-character tokens.
     /// A left parenthesis token.
@@ -1126,6 +1126,7 @@ impl Scanner {
             "for" => TokenType::For,
             "in" => TokenType::In,
             "to" => TokenType::To,
+            "str" => TokenType::String,
             "true" => TokenType::True,
             "false" => TokenType::False,
             "none" => TokenType::None,

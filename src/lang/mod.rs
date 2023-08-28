@@ -35,6 +35,12 @@ impl Lithium {
             let mut input = String::new();
             std::io::stdin().read_line(&mut input).unwrap();
 
+            if input.trim() == "exit" {
+                println!("Exiting...");
+
+                break;
+            }
+
             self.run(input);
         }
     }
@@ -84,11 +90,11 @@ impl Lithium {
         println!("Tokenization took {}.", format_time(time));
 
         // // Parse the tokens.
-        // println!("Parsing...");
-        // let (time, syntax_tree) = timer.time(|| parser::Parser::new(&tokens).parse());
+        println!("Parsing...");
+        let (time, syntax_tree) = timer.time(|| parser::Parser::new(&tokens).parse());
 
-        // println!("Syntax tree:\n{:#?}", syntax_tree);
-        // println!("Parsing took {}.", format_time(time));
+        println!("Syntax tree:\n{:#?}", syntax_tree);
+        println!("Parsing took {}.", format_time(time));
 
         // if syntax_tree.is_err() {
         //     self.had_error = true;
