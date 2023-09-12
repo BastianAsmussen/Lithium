@@ -18,6 +18,20 @@ To run the tests, use the following command:
 $ cargo test
 ```
 
+## Docker Image
+
+To build the Docker image, use the following command:
+
+```bash
+$ docker build -t lithium .
+```
+
+To run the Docker image, use the following command:
+
+```bash
+$ docker run -it --rm lithium
+```
+
 ## Usage
 
 To compile a Lithium program, use the following command:
