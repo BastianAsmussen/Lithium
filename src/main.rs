@@ -1,24 +1,19 @@
+use crate::lang::lexer::Scanner;
+use crate::utils::timer;
+use crate::utils::timer::Timer;
+use anyhow::Result;
+
 mod lang;
-mod util;
+mod utils;
 
-fn main() {
-    println!("Lithium v{}!", env!("CARGO_PKG_VERSION"));
-    
-    // Read the file parsed by the user.
-    let args: Vec<String> = std::env::args().collect();
+fn main() -> Result<()> {
+    let mut timer = Timer::new();
 
-    // If the user didn't pass a file, enter the REPL and print the usage.
-    let mut lithium = lang::Lithium::new();
-    
-    if args.len() < 2 {
-        println!("Usage: {} <file>", args[0]);
-        println!("No file is passed, entering REPL...");
+    let contents = std::fs::read_to_string("/home/bastian/Projects/Lithium/examples/test.lt")?;
+    let mut lexer = Scanner::new(&*contents);
+    let (tokens, elapsed) = timer.time(|| lexer.scan_tokens());
+    println!("Lexing took {time}.", time = timer::format_time(elapsed));
+    println!("Tokens: {:#?}", tokens);
 
-        lithium.run_prompt();
-
-        return;
-    }
-
-    // Run the file.
-    lithium.run_file(&args[1]);
+    Ok(())
 }

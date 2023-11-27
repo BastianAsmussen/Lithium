@@ -5,4 +5,5 @@ edition = "2021"
 license-file = "LICENSE"
 
 [dependencies]
-# llvm-sys = "170.0.0"
+anyhow = "1.0.75"
+inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm15-0-no-llvm-linking"] }

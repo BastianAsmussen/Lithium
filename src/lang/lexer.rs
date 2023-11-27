@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 /// An enumeration of all the possible tokens in the language.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum TokenType {
     // Single-character tokens.
     /// A left parenthesis token.
@@ -726,6 +726,16 @@ impl Token {
 }
 
 /// Representation of a scanner.
+///
+/// # Fields
+///
+/// * `source` - The source code to scan.
+/// * `tokens` - The vector of tokens.
+///
+/// * `start` - The start of the current token.
+/// * `current` - The current character.
+/// * `line` - The current line.
+/// * `column` - The current column.
 pub struct Scanner {
     source: String,
     tokens: Vec<Token>,
@@ -738,6 +748,14 @@ pub struct Scanner {
 
 impl Scanner {
     /// Creates a new scanner.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The source code to scan.
+    ///
+    /// # Returns
+    ///
+    /// * `Scanner` - The new scanner.
     pub fn new(source: &str) -> Self {
         Self {
             source: source.to_string(),
@@ -751,7 +769,11 @@ impl Scanner {
     }
 
     /// Scans the source code and returns a vector of tokens.
-    pub fn scan_tokens(&mut self) -> Vec<Token> {
+    ///
+    /// # Returns
+    ///
+    /// * `&Vec<Token>` - The vector of tokens.
+    pub fn scan_tokens(&mut self) -> &Vec<Token> {
         while !self.is_at_end() {
             self.start = self.current;
             self.scan_token();
@@ -764,7 +786,8 @@ impl Scanner {
             self.line,
             self.column,
         ));
-        self.tokens.clone()
+
+        &self.tokens
     }
 
     /// Scans a single token.
@@ -1147,44 +1170,45 @@ mod tests {
 
     #[test]
     fn test_scan_tokens() {
-        let source = "let a = 1 + 2 - 3 * 4 / 5 == 6 != 7 < 8 <= 9 > 10 >= 11 % 12 && true != false;";
+        let source =
+            "let a = 1 + 2 - 3 * 4 / 5 == 6 != 7 < 8 <= 9 > 10 >= 11 % 12 && true != false;";
         let mut scanner = Scanner::new(source);
         let tokens = scanner.scan_tokens();
 
         assert_eq!(tokens.len(), 31 + 1); // 31 tokens, plus EOF.
 
-        assert_eq!(tokens[0].token_type, TokenType::Variable);            // let
-        assert_eq!(tokens[1].token_type, TokenType::Identifier);          // a
-        assert_eq!(tokens[2].token_type, TokenType::Equal);               // =
-        assert_eq!(tokens[3].token_type, TokenType::Number);              // 1
-        assert_eq!(tokens[4].token_type, TokenType::Plus);                // +
-        assert_eq!(tokens[5].token_type, TokenType::Number);              // 2
-        assert_eq!(tokens[6].token_type, TokenType::Minus);               // -
-        assert_eq!(tokens[7].token_type, TokenType::Number);              // 3
-        assert_eq!(tokens[8].token_type, TokenType::Star);                // *
-        assert_eq!(tokens[9].token_type, TokenType::Number);              // 4
-        assert_eq!(tokens[10].token_type, TokenType::Slash);              // /
-        assert_eq!(tokens[11].token_type, TokenType::Number);             // 5
-        assert_eq!(tokens[12].token_type, TokenType::EqualEqual);         // ==
-        assert_eq!(tokens[13].token_type, TokenType::Number);             // 6
-        assert_eq!(tokens[14].token_type, TokenType::BangEqual);          // !=
-        assert_eq!(tokens[15].token_type, TokenType::Number);             // 7
-        assert_eq!(tokens[16].token_type, TokenType::LessThan);           // <
-        assert_eq!(tokens[17].token_type, TokenType::Number);             // 8
-        assert_eq!(tokens[18].token_type, TokenType::LessThanOrEqual);    // <=
-        assert_eq!(tokens[19].token_type, TokenType::Number);             // 9
-        assert_eq!(tokens[20].token_type, TokenType::GreaterThan);        // >
-        assert_eq!(tokens[21].token_type, TokenType::Number);             // 10
+        assert_eq!(tokens[0].token_type, TokenType::Variable); // let
+        assert_eq!(tokens[1].token_type, TokenType::Identifier); // a
+        assert_eq!(tokens[2].token_type, TokenType::Equal); // =
+        assert_eq!(tokens[3].token_type, TokenType::Number); // 1
+        assert_eq!(tokens[4].token_type, TokenType::Plus); // +
+        assert_eq!(tokens[5].token_type, TokenType::Number); // 2
+        assert_eq!(tokens[6].token_type, TokenType::Minus); // -
+        assert_eq!(tokens[7].token_type, TokenType::Number); // 3
+        assert_eq!(tokens[8].token_type, TokenType::Star); // *
+        assert_eq!(tokens[9].token_type, TokenType::Number); // 4
+        assert_eq!(tokens[10].token_type, TokenType::Slash); // /
+        assert_eq!(tokens[11].token_type, TokenType::Number); // 5
+        assert_eq!(tokens[12].token_type, TokenType::EqualEqual); // ==
+        assert_eq!(tokens[13].token_type, TokenType::Number); // 6
+        assert_eq!(tokens[14].token_type, TokenType::BangEqual); // !=
+        assert_eq!(tokens[15].token_type, TokenType::Number); // 7
+        assert_eq!(tokens[16].token_type, TokenType::LessThan); // <
+        assert_eq!(tokens[17].token_type, TokenType::Number); // 8
+        assert_eq!(tokens[18].token_type, TokenType::LessThanOrEqual); // <=
+        assert_eq!(tokens[19].token_type, TokenType::Number); // 9
+        assert_eq!(tokens[20].token_type, TokenType::GreaterThan); // >
+        assert_eq!(tokens[21].token_type, TokenType::Number); // 10
         assert_eq!(tokens[22].token_type, TokenType::GreaterThanOrEqual); // >=
-        assert_eq!(tokens[23].token_type, TokenType::Number);             // 11
-        assert_eq!(tokens[24].token_type, TokenType::Percent);            // %
-        assert_eq!(tokens[25].token_type, TokenType::Number);             // 12
-        assert_eq!(tokens[26].token_type, TokenType::LogicalAnd);         // &&
-        assert_eq!(tokens[27].token_type, TokenType::True);               // true
-        assert_eq!(tokens[28].token_type, TokenType::BangEqual);          // !=
-        assert_eq!(tokens[29].token_type, TokenType::False);              // false
-        assert_eq!(tokens[30].token_type, TokenType::Semicolon);          // ;
-        assert_eq!(tokens[31].token_type, TokenType::EndOfFile);          // EOF
+        assert_eq!(tokens[23].token_type, TokenType::Number); // 11
+        assert_eq!(tokens[24].token_type, TokenType::Percent); // %
+        assert_eq!(tokens[25].token_type, TokenType::Number); // 12
+        assert_eq!(tokens[26].token_type, TokenType::LogicalAnd); // &&
+        assert_eq!(tokens[27].token_type, TokenType::True); // true
+        assert_eq!(tokens[28].token_type, TokenType::BangEqual); // !=
+        assert_eq!(tokens[29].token_type, TokenType::False); // false
+        assert_eq!(tokens[30].token_type, TokenType::Semicolon); // ;
+        assert_eq!(tokens[31].token_type, TokenType::EndOfFile); // EOF
     }
 
     #[test]
@@ -1204,53 +1228,53 @@ mod tests {
 
         assert_eq!(tokens.len(), 8 * 5 + 1); // 8 lines, 5 tokens per line, plus EOF.
 
-        assert_eq!(tokens[0].token_type, TokenType::Variable);   // let
+        assert_eq!(tokens[0].token_type, TokenType::Variable); // let
         assert_eq!(tokens[1].token_type, TokenType::Identifier); // a
-        assert_eq!(tokens[2].token_type, TokenType::Equal);      // =
-        assert_eq!(tokens[3].token_type, TokenType::String);     // "Hello, world!"
-        assert_eq!(tokens[4].token_type, TokenType::Semicolon);  // ;
+        assert_eq!(tokens[2].token_type, TokenType::Equal); // =
+        assert_eq!(tokens[3].token_type, TokenType::String); // "Hello, world!"
+        assert_eq!(tokens[4].token_type, TokenType::Semicolon); // ;
 
-        assert_eq!(tokens[5].token_type, TokenType::Variable);   // let
+        assert_eq!(tokens[5].token_type, TokenType::Variable); // let
         assert_eq!(tokens[6].token_type, TokenType::Identifier); // b
-        assert_eq!(tokens[7].token_type, TokenType::Equal);      // =
-        assert_eq!(tokens[8].token_type, TokenType::String);     // "Hello, \"world\"!"
-        assert_eq!(tokens[9].token_type, TokenType::Semicolon);  // ;
+        assert_eq!(tokens[7].token_type, TokenType::Equal); // =
+        assert_eq!(tokens[8].token_type, TokenType::String); // "Hello, \"world\"!"
+        assert_eq!(tokens[9].token_type, TokenType::Semicolon); // ;
 
-        assert_eq!(tokens[10].token_type, TokenType::Variable);   // let
+        assert_eq!(tokens[10].token_type, TokenType::Variable); // let
         assert_eq!(tokens[11].token_type, TokenType::Identifier); // c
-        assert_eq!(tokens[12].token_type, TokenType::Equal);      // =
-        assert_eq!(tokens[13].token_type, TokenType::String);     // "Hello, \nworld!"
-        assert_eq!(tokens[14].token_type, TokenType::Semicolon);  // ;
+        assert_eq!(tokens[12].token_type, TokenType::Equal); // =
+        assert_eq!(tokens[13].token_type, TokenType::String); // "Hello, \nworld!"
+        assert_eq!(tokens[14].token_type, TokenType::Semicolon); // ;
 
-        assert_eq!(tokens[15].token_type, TokenType::Variable);   // let
+        assert_eq!(tokens[15].token_type, TokenType::Variable); // let
         assert_eq!(tokens[16].token_type, TokenType::Identifier); // d
-        assert_eq!(tokens[17].token_type, TokenType::Equal);      // =
-        assert_eq!(tokens[18].token_type, TokenType::String);     // "Hello, \tworld!"
-        assert_eq!(tokens[19].token_type, TokenType::Semicolon);  // ;
+        assert_eq!(tokens[17].token_type, TokenType::Equal); // =
+        assert_eq!(tokens[18].token_type, TokenType::String); // "Hello, \tworld!"
+        assert_eq!(tokens[19].token_type, TokenType::Semicolon); // ;
 
-        assert_eq!(tokens[20].token_type, TokenType::Variable);   // let
+        assert_eq!(tokens[20].token_type, TokenType::Variable); // let
         assert_eq!(tokens[21].token_type, TokenType::Identifier); // e
-        assert_eq!(tokens[22].token_type, TokenType::Equal);      // =
-        assert_eq!(tokens[23].token_type, TokenType::String);     // "Hello, \\world!"
-        assert_eq!(tokens[24].token_type, TokenType::Semicolon);  // ;
+        assert_eq!(tokens[22].token_type, TokenType::Equal); // =
+        assert_eq!(tokens[23].token_type, TokenType::String); // "Hello, \\world!"
+        assert_eq!(tokens[24].token_type, TokenType::Semicolon); // ;
 
-        assert_eq!(tokens[25].token_type, TokenType::Variable);   // let
+        assert_eq!(tokens[25].token_type, TokenType::Variable); // let
         assert_eq!(tokens[26].token_type, TokenType::Identifier); // f
-        assert_eq!(tokens[27].token_type, TokenType::Equal);      // =
-        assert_eq!(tokens[28].token_type, TokenType::String);     // "Hello, \rworld!"
-        assert_eq!(tokens[29].token_type, TokenType::Semicolon);  // ;
+        assert_eq!(tokens[27].token_type, TokenType::Equal); // =
+        assert_eq!(tokens[28].token_type, TokenType::String); // "Hello, \rworld!"
+        assert_eq!(tokens[29].token_type, TokenType::Semicolon); // ;
 
-        assert_eq!(tokens[30].token_type, TokenType::Variable);   // let
+        assert_eq!(tokens[30].token_type, TokenType::Variable); // let
         assert_eq!(tokens[31].token_type, TokenType::Identifier); // g
-        assert_eq!(tokens[32].token_type, TokenType::Equal);      // =
-        assert_eq!(tokens[33].token_type, TokenType::String);     // "Hello, \0world!"
-        assert_eq!(tokens[34].token_type, TokenType::Semicolon);  // ;
+        assert_eq!(tokens[32].token_type, TokenType::Equal); // =
+        assert_eq!(tokens[33].token_type, TokenType::String); // "Hello, \0world!"
+        assert_eq!(tokens[34].token_type, TokenType::Semicolon); // ;
 
-        assert_eq!(tokens[35].token_type, TokenType::Variable);   // let
+        assert_eq!(tokens[35].token_type, TokenType::Variable); // let
         assert_eq!(tokens[36].token_type, TokenType::Identifier); // h
-        assert_eq!(tokens[37].token_type, TokenType::Equal);      // =
-        assert_eq!(tokens[38].token_type, TokenType::String);     // "Hello, \x00world!"
-        assert_eq!(tokens[39].token_type, TokenType::Semicolon);  // ;
+        assert_eq!(tokens[37].token_type, TokenType::Equal); // =
+        assert_eq!(tokens[38].token_type, TokenType::String); // "Hello, \x00world!"
+        assert_eq!(tokens[39].token_type, TokenType::Semicolon); // ;
 
         assert_eq!(tokens[40].token_type, TokenType::EndOfFile); // EOF
     }
