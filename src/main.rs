@@ -1,19 +1,34 @@
-use crate::lang::lexer::Scanner;
+use crate::lang::lexer::{self, Lexer};
 use crate::utils::timer;
 use crate::utils::timer::Timer;
-use anyhow::Result;
+use clap::Parser;
 
 mod lang;
 mod utils;
 
-fn main() -> Result<()> {
+#[derive(Debug, Parser)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// The path to a .lt file.
+    #[arg(short, long)]
+    path: String,
+}
+
+fn main() {
     let mut timer = Timer::new();
 
-    let contents = std::fs::read_to_string("/home/bastian/Projects/Lithium/examples/test.lt")?;
-    let mut lexer = Scanner::new(&*contents);
-    let (tokens, elapsed) = timer.time(|| lexer.scan_tokens());
-    println!("Lexing took {time}.", time = timer::format_time(elapsed));
-    println!("Tokens: {:#?}", tokens);
+    let args = Args::parse();
+    let contents = match lexer::read_file(&args.path) {
+        Ok(contents) => contents,
+        Err(cause) => {
+            eprintln!("{cause}");
 
-    Ok(())
+            std::process::exit(1);
+        }
+    };
+
+    let mut lexer = Lexer::new(&contents);
+    let (tokens, elapsed) = timer.time(|| lexer.scan_tokens());
+    println!("Tokens: {tokens:#?}");
+    println!("Lexing took {time}.", time = timer::format_time(elapsed));
 }
