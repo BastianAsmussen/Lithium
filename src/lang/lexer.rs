@@ -682,7 +682,7 @@ impl Lexer {
     /// * If the number fails to parse.
     fn number(&mut self) -> Result<(), Error> {
         // Keep reading until the number ends.
-        let start = self.current;
+        let start = self.current - 1;
         loop {
             let Some(next) = self.peek() else {
                 break;
