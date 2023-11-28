@@ -1,683 +1,156 @@
-use std::fmt::{Display, Formatter};
+use crate::lang::errors::{Error, LexerError};
+use std::{
+    fmt::{Display, Formatter},
+    path::Path,
+};
+
+/// The file extension source files must end with.
+pub const FILE_EXTENSION: &str = "lt";
 
 /// An enumeration of all the possible tokens in the language.
+///
+/// # Variants
+///
+/// * `LeftParenthesis`: A left parenthesis token, `(`.
+/// * `RightParenthesis`: A right parenthesis token, `)`.
+/// * `LeftCurlyBrace`: A left curly brace token, `{`.
+/// * `RightCurlyBrace`: A right curly brace token, `}`.
+/// * `Semicolon`: A semicolon token, `;`.
+/// * `Comma`: A comma token, `,`.
+/// * `Colon`: A colon token, `:`.
+/// * `Plus`: A plus token, `+`.
+/// * `Minus`: A minus token, `-`.
+/// * `Star`: A star token, `*`.
+/// * `Slash`: A slash token, `/`.
+/// * `Percent`: A percent token, `%`.
+/// * `BitwiseXor`: A bitwise XOR token, `^`.
+/// * `BitwiseAnd`: A bitwise AND token, `&`.
+/// * `BitwiseOr`: A bitwise OR token, `|`.
+/// * `LogicalAnd`: A logical AND token, `&&`.
+/// * `LogicalOr`: A logical OR token, `||`.
+/// * `Bang`: A bang token, `!`.
+/// * `BangEqual`: A bang equal token, `!=`.
+/// * `Equal`: An equal token, `=`.
+/// * `EqualEqual`: An equal equal token, `==`.
+/// * `GreaterThan`: A greater than token, `>`.
+/// * `GreaterThanOrEqual`: A greater than or equal token, `>=`.
+/// * `LessThan`: A less than token, `<`.
+/// * `LessThanOrEqual`: A less than or equal token, `<=`.
+/// * `Increment`: An increment token, `++`.
+/// * `Decrement`: A decrement token, `--`.
+/// * `BitwiseLeftShift`: A bitwise left shift token, `<<`.
+/// * `BitwiseRightShift`: A bitwise right shift token, `>>`.
+/// * `BitwiseRightShiftEqual`: A bitwise right shift equal token, `>>=`.
+/// * `BitwiseLeftShiftEqual`: A bitwise left shift equal token, `<<=`.
+/// * `PlusEqual`: A plus equal token, `+=`.
+/// * `MinusEqual`: A minus equal token, `-=`.
+/// * `StarEqual`: A star equal token, `*=`.
+/// * `SlashEqual`: A slash equal token, `/=`.
+/// * `PercentEqual`: A percent equal token, `%=`.
+/// * `BitwiseAndEqual`: A bitwise AND equal token, `&=`.
+/// * `BitwiseOrEqual`: A bitwise OR equal token, `|=`.
+/// * `BitwiseXorEqual`: A bitwise XOR equal token, `^=`.
+/// * `Identifier`: An identifier token.
+/// * `String`: A string token.
+/// * `Number`: A number token.
+/// * `If`: An if token, `if`.
+/// * `Else`: An else token, `else`.
+/// * `Switch`: A switch token, `switch`.
+/// * `Case`: A case token, `case`.
+/// * `Default`: A default token, `_`.
+/// * `ExpressionArrow`: An expression arrow token, `=>`.
+/// * `True`: A true token, `true`.
+/// * `False`: A false token, `false`.
+/// * `Arrow`: An arrow token, `->`.
+/// * `Return`: A return token, `return`.
+/// * `While`: A while token, `while`.
+/// * `For`: A for token, `for`.
+/// * `In`: An in token, `in`.
+/// * `To`: A to token, `to`.
+/// * `Break`: A break token, `break`.
+/// * `Continue`: A continue token, `continue`.
+/// * `Function`: A function token, `fn`.
+/// * `Variable`: A variable token, `let`.
+/// * `Constant`: A constant token, `const`.
+/// * `EndOfFile`: An end of file token.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum TokenType {
-    // Single-character tokens.
-    /// A left parenthesis token.
-    /// '('
-    ///
-    /// # Example
-    /// ```
-    /// // Left parenthesis token is '('.
-    /// test_function();
     LeftParenthesis,
-    /// A right parenthesis token.
-    /// ')'
-    ///
-    /// # Example
-    /// ```
-    /// // Right parenthesis token is ')'.
-    /// test_function();
     RightParenthesis,
-    /// A left curly brace token.
-    /// '{'
-    ///
-    /// # Example
-    /// ```
-    /// // Left curly brace token is '{'.
-    /// fn main() {}
     LeftCurlyBrace,
-    /// A right curly brace token.
-    /// '}'
-    ///
-    /// # Example
-    /// ```
-    /// // Right curly brace token is '}'.
-    /// fn main() {}
-    /// ```
     RightCurlyBrace,
-    /// A semicolon token.
-    /// ';'
-    ///
-    /// # Example
-    /// ```
-    /// // Semicolon token is ';'.
-    /// let a = 6;
     Semicolon,
-    /// A comma token.
-    /// ','
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// let b = 4;
-    /// // Comma token is ','.
-    /// test_function(a, b);
     Comma,
-    /// A colon token.
-    /// ':'
-    /// Used for type annotations.
-    ///
-    /// # Example
-    /// ```
-    /// // Colon token is ':'.
-    /// let a: i32 = 6;
-    /// ```
     Colon,
-    /// A plus token.
-    /// '+'
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// let b = 4;
-    /// // Plus token is '+'.
-    /// let c = a + b;
     Plus,
-    /// A minus token.
-    /// '-'
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// let b = 4;
-    /// // Minus token is '-'.
-    /// let c = a - b;
     Minus,
-    /// A star token.
-    /// '*'
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// let b = 4;
-    /// // Star token is '*'.
-    /// let c = a * b;
     Star,
-    /// A slash token.
-    /// '/'
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// let b = 4;
-    /// // Slash token is '/'.
-    /// let c = a / b;
     Slash,
-    /// A percent token.
-    /// '%'
-    /// Used for the remainder operator.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// let b = 4;
-    /// // Percent token is '%'.
-    /// let c = a % b;
-    /// ```
     Percent,
-    /// A caret token.
-    /// '^'
-    /// Used for bitwise XOR expressions.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 0b1010 ^ 0b1100;
-    /// ```
     BitwiseXor,
-    /// Ampersand token.
-    /// '&'
-    /// Used for bitwise AND expressions.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 0b1010 & 0b1100;
-    /// ```
     BitwiseAnd,
-    /// A pipe token.
-    /// '|'
-    /// Used for bitwise OR expressions.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 0b1010 | 0b1100;
-    /// ```
     BitwiseOr,
-    /// A double ampersand token.
-    /// '&&'
-    /// Used for logical AND expressions.
-    ///
-    /// # Example
-    /// ```
-    /// let a = true && false;
-    /// ```
     LogicalAnd,
-    /// A double pipe token.
-    /// '||'
-    /// Used for logical OR expressions.
-    ///
-    /// # Example
-    /// ```
-    /// let a = true || false;
-    /// ```
     LogicalOr,
-    // One or two character tokens.
-    /// A bang token.
-    /// '!'
-    ///
-    /// # Example
-    /// ```
-    /// let a = false;
-    ///
-    /// // Bang token is '!'.
-    /// if !a {
-    ///     print("!a = true.");
-    /// }
     Bang,
-    /// A bang-equal. '!='
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// let b = 4;
-    ///
-    /// // Bang-equal token is '!='.
-    /// if a != b {
-    ///     print("a is not equal to b!");
-    /// }
     BangEqual,
-    /// An equal token. '='
-    ///
-    /// # Example
-    /// ```
-    /// // Equal token is '='.
-    /// let a = 6;
-    /// ```
     Equal,
-    /// An equal-equal token.
-    /// '=='
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// let b = 4;
-    ///
-    /// // Equal-equal token is '=='.
-    /// if a == b {
-    ///     print("a is equal to b!");
-    /// }
     EqualEqual,
-    /// A greater-than token.
-    /// '>'
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// let b = 4;
-    ///
-    /// // Greater-than token is '>'.
-    /// if a > b {
-    ///     print("a is greater than b!");
-    /// }
     GreaterThan,
-    /// A greater-than, or equal to token.
-    /// '>='
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// let b = 4;
-    ///
-    /// // Greater-than, or equal to token is '>='.
-    /// if a >= b {
-    ///     print("a is greater than or equal to b!");
-    /// }
     GreaterThanOrEqual,
-    /// A less-than token.
-    /// '<'
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// let b = 4;
-    ///
-    /// // Less-than token is '<'.
-    /// if a < b {
-    ///     print("a is less than b!");
-    /// }
     LessThan,
-    /// A less than, or equal to token.
-    /// '<='
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// let b = 4;
-    ///
-    /// if a <= b {
-    ///     print("a is less than or equal to b!");
-    /// }
-    /// ```
     LessThanOrEqual,
-    /// The increment token.
-    /// '++'
-    /// Used for incrementing variables.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// a++; // a is now 7.
-    /// ```
     Increment,
-    /// The decrement token.
-    /// '--'
-    /// Used for decrementing variables.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// a--; // a is now 5.
-    /// ```
     Decrement,
-    /// The bitwise left shift token.
-    /// '<<'
-    /// Used for bitwise left shift expressions.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 0b1010 << 2;
-    /// ```
     BitwiseLeftShift,
-    /// The bitwise right shift token.
-    /// '>>'
-    /// Used for bitwise right shift expressions.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 0b1010 >> 2;
-    /// ```
     BitwiseRightShift,
-    /// The bitwise right shift equal token.
-    /// '>>='
-    /// Used for bitwise right shift expressions, and assigning the result to the variable.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 0b1010;
-    /// a >>= 2; // a is now 0b10.
-    /// ```
     BitwiseRightShiftEqual,
-    /// The bitwise left shift equal token.
-    /// '<<='
-    /// Used for bitwise left shift expressions, and assigning the result to the variable.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 0b1010;
-    /// a <<= 2; // a is now 0b101000.
-    /// ```
     BitwiseLeftShiftEqual,
-    /// The plus-equal token.
-    /// '+='
-    /// Used for adding a value to a variable, and assigning the result to the variable.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// a += 4; // a is now 10.
-    /// ```
     PlusEqual,
-    /// The minus-equal token.
-    /// '-='
-    /// Used for subtracting a value from a variable, and assigning the result to the variable.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// a -= 4; // a is now 2.
-    /// ```
     MinusEqual,
-    /// The star-equal token.
-    /// '*='
-    /// Used for multiplying a variable by a value, and assigning the result to the variable.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// a *= 4; // a is now 24.
-    /// ```
     StarEqual,
-    /// The slash-equal token.
-    /// '/='
-    /// Used for dividing a variable by a value, and assigning the result to the variable.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// a /= 4; // a is now 1.5.
-    /// ```
     SlashEqual,
-    /// The percent-equal token.
-    /// '%='
-    /// Used for getting the remainder of a variable divided by a value,
-    /// and assigning the result to the variable.
-    /// Also known as the modulo operator.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// a %= 4; // a is now 2.
-    /// ```
     PercentEqual,
-    /// The bitwise and-equal token.
-    /// '&='
-    /// Used for bitwise AND-ing a variable with a value, and assigning the result to the variable.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 0b1010;
-    /// a &= 0b1100; // a is now 0b1000.
-    /// ```
     BitwiseAndEqual,
-    /// The bitwise or-equal token.
-    /// '|='
-    /// Used for bitwise OR-ing a variable with a value, and assigning the result to the variable.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 0b1010;
-    /// a |= 0b1100; // a is now 0b1110.
-    /// ```
     BitwiseOrEqual,
-    /// The bitwise XOR-equal token.
-    /// '^='
-    /// Used for bitwise XOR-ing a variable with a value, and assigning the result to the variable.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 0b1010;
-    /// a ^= 0b1100; // a is now 0b0110.
-    /// ```
     BitwiseXorEqual,
-    // Literals.
-    /// An identifier literal.
-    /// Used for variable names, function names, etc.
-    ///
-    /// # Example
-    /// ```
-    /// // Identifier is 'a'.
-    /// let a = 6;
-    ///
-    /// // Identifier is 'test_function'.
-    /// test_function();
-    /// ```
     Identifier,
-    /// A string literal.
-    /// Used for strings.
-    ///
-    /// # Example
-    /// ```
-    /// let text = "Hello, world!";
-    /// ```
     String,
-    /// A number literal.
-    /// Used for numbers.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6.9;
-    /// let b = 4.2;
-    /// let c = a + b;
-    /// ```
     Number,
-
-    // Keywords.
-    /// The 'if' keyword.
-    /// Used for conditional statements.
-    ///
-    /// # Example
-    /// ```
-    /// if true {
-    ///     print("Hello, world!");
-    /// }
-    /// ```
     If,
-    /// The 'else' keyword.
-    /// Used for conditional statements.
-    ///
-    /// # Example
-    /// ```
-    /// if true {
-    ///     print("Hello, world!");
-    /// } else {
-    ///     print("Goodbye, world!");
-    /// }
-    /// ```
     Else,
-    /// The 'switch' keyword.
-    /// Used for conditional statements.
-    /// The switch statement is a multi-way branch statement.
-    /// It provides an easy way
-    /// to dispatch execution to different parts of code based on the value of the expression.
-    /// The switch statement evaluates its expression,
-    /// then executes all statements that follow the matching case label.
-    ///
-    /// # Example
-    /// ```
-    /// switch <expression> {
-    ///     case <expression>:
-    ///         <statements>
-    ///     case <expression>:
-    ///         <statements>
-    ///     default:
-    ///         <statements>
-    /// }
-    /// ```
     Switch,
-    /// The 'case' keyword.
-    /// Used for conditional switch statements.
-    ///
-    /// # Example
-    /// ```
-    /// switch <expression> {
-    ///     case <expression>:
-    ///         <statements>
-    ///     case <expression>:
-    ///         <statements>
-    ///     default:
-    ///         <statements>
-    /// }
-    /// ```
     Case,
-    /// The 'default' keyword.
-    /// Used for conditional switch statements.
-    ///
-    /// # Example
-    /// ```
-    /// switch <expression> {
-    ///     case <expression>:
-    ///         <statements>
-    ///     case <expression>:
-    ///         <statements>
-    ///     default:
-    ///         <statements>
-    /// }
-    /// ```
     Default,
-    /// The '=>' keyword.
-    /// Used for conditional switch statements.
-    /// The arrow operator is used to separate the expression from the statements.
-    ///
-    /// # Example
-    /// ```
-    /// switch <expression> {
-    ///     case <expression> => <statement>,
-    ///     case <expression> => {
-    ///         <statements>
-    ///     },
-    ///     default => <statement>,
-    /// }
-    /// ```
     ExpressionArrow,
-    /// The 'true' keyword.
-    /// Used for boolean values.
-    ///
-    /// # Example
-    /// ```
-    /// let a = true;
-    /// ```
     True,
-    /// The 'false' keyword.
-    /// Used for boolean values.
-    ///
-    /// # Example
-    /// ```
-    /// let a = false;
-    /// ```
     False,
-    /// The 'none' keyword.
-    /// Used for null values.
-    ///
-    /// # Example
-    /// ```
-    /// let a = none;
-    /// ```
-    None,
-    /// The 'print' keyword.
-    /// Used for printing to the console.
-    ///
-    /// # Example
-    /// ```
-    /// print("Hello, world!");
-    /// ```
-    Print,
-    /// The '->' keyword.
-    /// Used for function return types.
-    ///
-    /// # Example
-    /// ```
-    /// fn test_function() -> f32 {
-    ///     return 6.9;
-    /// }
-    /// ```
     Arrow,
-    /// The 'return' keyword.
-    /// Used for returning values from functions.
-    ///
-    /// # Example
-    /// ```
-    /// fn test_function() -> f32 {
-    ///    return 6.9;
-    /// }
-    /// ```
     Return,
-    /// The 'while' keyword.
-    /// Used for loops.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 0;
-    /// while a < 10 {
-    ///     print(a++);
-    /// }
-    /// ```
     While,
-    /// The 'for' keyword.
-    /// Used for loops.
-    ///
-    /// # Example
-    /// ```
-    /// for i in 0 to 10 {
-    ///     print(i);
-    /// }
-    /// ```
     For,
-    /// The 'in' keyword.
-    /// Used in range-based expressions.
-    ///
-    /// # Example
-    /// ```
-    /// for i in 0 to 10 {
-    ///     print(i);
-    /// }
-    /// ```
     In,
-    /// The 'to' keyword.
-    /// Used in range-based expressions.
-    ///
-    /// # Example
-    /// ```
-    /// for i in 0 to 10 {
-    ///     print(i);
-    /// }
-    /// ```
     To,
-    /// The 'break' keyword.
-    /// Used for breaking out of loops.
-    ///
-    /// # Example
-    /// ```
-    /// for i in 0 to 10 {
-    ///     if i == 5 {
-    ///         break;
-    /// }
-    /// ```
     Break,
-    /// The 'continue' keyword.
-    /// Used for skipping to the next iteration of a loop.
-    ///
-    /// # Example
-    /// ```
-    /// for i in 0 to 10 {
-    ///     if i == 5 {
-    ///         continue;
-    ///     }
-    /// }
-    /// ```
     Continue,
-    /// The 'fn' keyword.
-    /// Used for function declarations.
-    ///
-    /// # Example
-    /// ```
-    /// fn test_function() {
-    ///     print("Hello, world!");
-    /// }
-    /// ```
     Function,
-    /// The 'let' keyword.
-    /// Used for variable declarations.
-    ///
-    /// # Example
-    /// ```
-    /// let a = 6;
-    /// ```
     Variable,
-    /// The 'const' keyword.
-    /// Used for constant declarations.
-    ///
-    /// # Example
-    /// ```
-    /// const a = 6;
-    /// ```
     Constant,
-
-    /// Used to represent the end of a file.
     EndOfFile,
 }
 
 /// Representation of a literal.
+///
+/// # Variants
+///
+/// * `String(String)`: A string literal.
+/// * `Number(f64)`: A number literal.
+/// * `Boolean(bool)`: A boolean literal.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
-    /// A string literal.
     String(String),
-    /// A number literal.
     Number(f64),
-    /// A boolean literal.
     Boolean(bool),
-    /// A null literal.
-    None,
 }
 
 impl Eq for Literal {
@@ -687,16 +160,24 @@ impl Eq for Literal {
 impl Display for Literal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Literal::String(string) => write!(f, "{}", string),
-            Literal::Number(number) => write!(f, "{}", number),
-            Literal::Boolean(boolean) => write!(f, "{}", boolean),
-            Literal::None => write!(f, "none"),
+            Self::String(string) => write!(f, "{string}"),
+            Self::Number(number) => write!(f, "{number}"),
+            Self::Boolean(boolean) => write!(f, "{boolean}"),
         }
     }
 }
 
 /// Representation of a token, with its type, lexeme, literal, line, and column.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// # Fields
+///
+/// * `token_type`: The type of the token.
+/// * `lexeme`: The value of the token.
+/// * `literal`: The literal value of the token, if any.
+///
+/// * `line`: What line the token exists at.
+/// * `column`: What column the token exists at.
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
@@ -708,10 +189,24 @@ pub struct Token {
 
 impl Token {
     /// Creates a new token.
+    ///
+    /// # Arguments
+    ///
+    /// * `token_type`: The type of the token.
+    /// * `lexeme`: The value of the token.
+    /// * `literal`: The literal value of the token, if any.
+    ///
+    /// * `line`: What line the token exists at.
+    /// * `column`: What column the token exists at.
+    ///
+    /// # Returns
+    ///
+    /// * `Token`: The new token.
     pub fn new(
         token_type: TokenType,
         lexeme: &str,
         literal: Option<Literal>,
+
         line: usize,
         column: usize,
     ) -> Self {
@@ -719,43 +214,46 @@ impl Token {
             token_type,
             lexeme: lexeme.to_string(),
             literal,
+
             line,
             column,
         }
     }
 }
 
-/// Representation of a scanner.
+/// Representation of a lexer.
 ///
 /// # Fields
 ///
-/// * `source` - The source code to scan.
-/// * `tokens` - The vector of tokens.
+/// * `source`: The source code to scan.
+/// * `tokens`: The vector of tokens.
 ///
-/// * `start` - The start of the current token.
-/// * `current` - The current character.
-/// * `line` - The current line.
-/// * `column` - The current column.
-pub struct Scanner {
+/// * `start`: The start of the current token.
+/// * `current`: The current character.
+///
+/// * `line`: The current line.
+/// * `column`: The current column.
+pub struct Lexer {
     source: String,
     tokens: Vec<Token>,
 
     start: usize,
     current: usize,
+
     line: usize,
     column: usize,
 }
 
-impl Scanner {
-    /// Creates a new scanner.
+impl Lexer {
+    /// Creates a new lexer.
     ///
     /// # Arguments
     ///
-    /// * `source` - The source code to scan.
+    /// * `source`: The source code to scan.
     ///
     /// # Returns
     ///
-    /// * `Scanner` - The new scanner.
+    /// * `Lexer`: The new lexer.
     pub fn new(source: &str) -> Self {
         Self {
             source: source.to_string(),
@@ -763,6 +261,7 @@ impl Scanner {
 
             start: 0,
             current: 0,
+
             line: 1,
             column: 1,
         }
@@ -772,11 +271,17 @@ impl Scanner {
     ///
     /// # Returns
     ///
-    /// * `&Vec<Token>` - The vector of tokens.
-    pub fn scan_tokens(&mut self) -> &Vec<Token> {
+    /// * `Result<&Vec<Token>, Error>`: The vector of tokens, or an error.
+    ///
+    /// # Errors
+    ///
+    /// * If there are no more tokens to scan.
+    /// * Lexer tried to advance past the end of the source code.
+    /// * If an unexpected character appears.
+    pub fn scan_tokens(&mut self) -> Result<&Vec<Token>, Error> {
         while !self.is_at_end() {
             self.start = self.current;
-            self.scan_token();
+            self.scan_token()?;
         }
 
         self.tokens.push(Token::new(
@@ -787,261 +292,300 @@ impl Scanner {
             self.column,
         ));
 
-        &self.tokens
+        Ok(&self.tokens)
     }
 
     /// Scans a single token.
-    fn scan_token(&mut self) {
-        let c = self.advance();
+    ///
+    /// # Returns
+    ///
+    /// * `Result<(), Error>`: The result of the operation.
+    ///
+    /// # Errors
+    ///
+    /// * If there are no more tokens to scan.
+    /// * Lexer tried to advance past the end of the source code.
+    /// * If an unexpected character appears.
+    fn scan_token(&mut self) -> Result<(), Error> {
+        let value = self
+            .advance()
+            .ok_or(Error::Lexer(LexerError::UnexpectedEoF(
+                "No more tokens to scan!".into(),
+            )))?;
 
-        match c {
-            // Single-character tokens.
-            '(' => self.add_token(TokenType::LeftParenthesis),
-            ')' => self.add_token(TokenType::RightParenthesis),
-            '{' => self.add_token(TokenType::LeftCurlyBrace),
-            '}' => self.add_token(TokenType::RightCurlyBrace),
-            ':' => self.add_token(TokenType::Colon),
-            ';' => self.add_token(TokenType::Semicolon),
-            ',' => self.add_token(TokenType::Comma),
+        // Check if it's a single-character token.
+        if let Ok(token_type) = Self::get_single_char_token(value) {
+            return self.add_token(token_type);
+        };
+        // Check if it's a multi-character token.
+        if let Ok(token_type) = self.get_multi_char_token(value) {
+            return self.add_token(token_type);
+        };
 
-            // One or two character tokens.
-            '!' => {
-                if self.match_char('=') {
-                    self.add_token(TokenType::BangEqual);
-                } else {
-                    self.add_token(TokenType::Bang);
-                }
-            }
-            '=' => {
-                if self.match_char('=') {
-                    // Equal to.
-                    self.add_token(TokenType::EqualEqual);
-                } else if self.match_char('>') {
-                    // Expression arrow, used for closures.
-                    self.add_token(TokenType::ExpressionArrow);
-                } else {
-                    // Assignment.
-                    self.add_token(TokenType::Equal);
-                }
-            }
-            '<' => {
-                if self.match_char('=') {
-                    // Less than or equal to.
-                    self.add_token(TokenType::LessThanOrEqual);
-                } else if self.match_char('<') {
-                    if self.match_char('=') {
-                        // Bitwise left shift assignment.
-                        self.add_token(TokenType::BitwiseLeftShiftEqual);
-                    } else {
-                        // Bitwise left shift.
-                        self.add_token(TokenType::BitwiseLeftShift);
-                    }
-                } else {
-                    // Less than.
-                    self.add_token(TokenType::LessThan);
-                }
-            }
-            '>' => {
-                if self.match_char('=') {
-                    // Greater than or equal to.
-                    self.add_token(TokenType::GreaterThanOrEqual);
-                } else if self.match_char('>') {
-                    if self.match_char('=') {
-                        // Bitwise right shift assignment.
-                        self.add_token(TokenType::BitwiseRightShiftEqual);
-                    } else {
-                        // Bitwise right shift.
-                        self.add_token(TokenType::BitwiseRightShift);
-                    }
-                } else {
-                    // Greater than.
-                    self.add_token(TokenType::GreaterThan);
-                }
-            }
-            '+' => {
-                if self.match_char('+') {
-                    // Increment.
-                    self.add_token(TokenType::Increment);
-                } else if self.match_char('=') {
-                    // Addition assignment.
-                    self.add_token(TokenType::PlusEqual);
-                } else {
-                    // Addition.
-                    self.add_token(TokenType::Plus);
-                }
-            }
-            '-' => {
-                if self.match_char('-') {
-                    // Decrement.
-                    self.add_token(TokenType::Decrement);
-                } else if self.match_char('=') {
-                    // Subtraction assignment.
-                    self.add_token(TokenType::MinusEqual);
-                } else if self.match_char('>') {
-                    // Arrow.
-                    self.add_token(TokenType::Arrow);
-                } else {
-                    // Subtraction.
-                    self.add_token(TokenType::Minus); // Subtraction
-                }
-            }
-            '*' => {
-                if self.match_char('=') {
-                    // Multiplication assignment.
-                    self.add_token(TokenType::StarEqual);
-                } else {
-                    // Multiplication.
-                    self.add_token(TokenType::Star);
-                }
-            }
-            '%' => {
-                if self.match_char('=') {
-                    // Modulo assignment.
-                    self.add_token(TokenType::PercentEqual);
-                } else {
-                    // Modulo.
-                    self.add_token(TokenType::Percent);
-                }
-            }
-            '&' => {
-                if self.match_char('&') {
-                    // Logical AND.
-                    self.add_token(TokenType::LogicalAnd);
-                } else if self.match_char('=') {
-                    // Bitwise AND assignment.
-                    self.add_token(TokenType::BitwiseAndEqual);
-                } else {
-                    // Bitwise AND.
-                    self.add_token(TokenType::BitwiseAnd);
-                }
-            }
-            '|' => {
-                if self.match_char('|') {
-                    // Logical OR.
-                    self.add_token(TokenType::LogicalOr);
-                } else if self.match_char('=') {
-                    // Bitwise OR assignment.
-                    self.add_token(TokenType::BitwiseOrEqual);
-                } else {
-                    // Bitwise OR.
-                    self.add_token(TokenType::BitwiseOr);
-                }
-            }
-            '^' => {
-                if self.match_char('=') {
-                    // Bitwise XOR assignment.
-                    self.add_token(TokenType::BitwiseXorEqual);
-                } else {
-                    // Bitwise XOR.
-                    self.add_token(TokenType::BitwiseXor);
-                }
-            }
-
+        match value {
             // Literals.
-            '"' => self.string(),
-            '0'..='9' => self.number(),
-            'a'..='z' | 'A'..='Z' | '_' => self.identifier(),
+            '"' => self.string()?,
+            '0'..='9' => self.number()?,
+            'a'..='z' | 'A'..='Z' | '_' => self.identifier()?,
 
             // Whitespace.
             ' ' | '\r' | '\t' => (),
-            '\n' => {
-                self.line += 1;
-                self.column = 1;
-            }
-
+            '\n' => self.new_line(),
             '/' => {
                 if self.match_char('/') {
                     // Single-line comments.
-                    while self.peek() != '\n' && !self.is_at_end() {
+                    while self.peek() != Some('\n') && !self.is_at_end() {
                         self.advance();
                     }
                 } else if self.match_char('*') {
                     // Multi-line comments.
-                    while self.peek() != '*' && self.peek_next() != '/' && !self.is_at_end() {
-                        if self.peek() == '\n' {
-                            self.line += 1;
-                            self.column = 1;
+                    while self.peek_next(1) != Some("*/".into()) && !self.is_at_end() {
+                        if self.peek() == Some('\n') {
+                            self.new_line();
                         }
+
                         self.advance();
                     }
 
                     if self.is_at_end() {
-                        panic!("Scanner tried to advance past the end of the source code!");
+                        return Err(Error::Lexer(LexerError::UnexpectedEoF(
+                            "Lexer tried to advance past the end of the source code!".into(),
+                        )));
                     }
 
                     self.advance();
                     self.advance();
                 } else if self.match_char('=') {
                     // Division assignment.
-                    self.add_token(TokenType::SlashEqual);
+                    self.add_token(TokenType::SlashEqual)?;
                 } else {
                     // Division.
-                    self.add_token(TokenType::Slash);
+                    self.add_token(TokenType::Slash)?;
                 }
             }
-            _ => panic!("Unexpected character: {}", c),
+            _ => return Err(Error::Lexer(LexerError::UnexpectedCharacter(value))),
         }
+
+        Ok(())
     }
 
-    /// Advances the scanner by one character.
+    /// Extracts a single-character token from the source code.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The current character.
     ///
     /// # Returns
-    /// The character that was advanced to.
     ///
-    /// # Panics
-    /// Panics if the scanner tries to advance past the end of the source code.
-    fn advance(&mut self) -> char {
+    /// * `Result<TokenType, Error>`: The type of the token, or an error.
+    ///
+    /// # Errors
+    ///
+    /// * If the character is not a valid single-character token.
+    const fn get_single_char_token(value: char) -> Result<TokenType, Error> {
+        let token_type = match value {
+            '(' => TokenType::LeftParenthesis,
+            ')' => TokenType::RightParenthesis,
+            '{' => TokenType::LeftCurlyBrace,
+            '}' => TokenType::RightCurlyBrace,
+            ':' => TokenType::Colon,
+            ';' => TokenType::Semicolon,
+            ',' => TokenType::Comma,
+            _ => return Err(Error::Lexer(LexerError::UnexpectedCharacter(value))),
+        };
+
+        Ok(token_type)
+    }
+
+    /// Extracts a multi-character token from the source code.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The current character.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<TokenType, Error>`: The type of the token, or an error.
+    ///
+    /// # Errors
+    ///
+    /// * If the character is not a valid multi-character token.
+    fn get_multi_char_token(&mut self, value: char) -> Result<TokenType, Error> {
+        let token_type = match value {
+            '!' => {
+                if self.match_char('=') {
+                    TokenType::BangEqual
+                } else {
+                    TokenType::Bang
+                }
+            }
+            '=' => {
+                if self.match_char('=') {
+                    TokenType::EqualEqual
+                } else if self.match_char('>') {
+                    TokenType::ExpressionArrow
+                } else {
+                    TokenType::Equal
+                }
+            }
+            '<' => {
+                if self.match_char('=') {
+                    TokenType::LessThanOrEqual
+                } else if self.match_char('<') {
+                    if self.match_char('=') {
+                        TokenType::BitwiseLeftShiftEqual
+                    } else {
+                        TokenType::BitwiseLeftShift
+                    }
+                } else {
+                    TokenType::LessThan
+                }
+            }
+            '>' => {
+                if self.match_char('=') {
+                    TokenType::GreaterThanOrEqual
+                } else if self.match_char('>') {
+                    if self.match_char('=') {
+                        TokenType::BitwiseRightShiftEqual
+                    } else {
+                        TokenType::BitwiseRightShift
+                    }
+                } else {
+                    TokenType::GreaterThan
+                }
+            }
+            '+' => {
+                if self.match_char('+') {
+                    TokenType::Increment
+                } else if self.match_char('=') {
+                    TokenType::PlusEqual
+                } else {
+                    TokenType::Plus
+                }
+            }
+            '-' => {
+                if self.match_char('-') {
+                    TokenType::Decrement
+                } else if self.match_char('=') {
+                    TokenType::MinusEqual
+                } else if self.match_char('>') {
+                    TokenType::Arrow
+                } else {
+                    TokenType::Minus
+                }
+            }
+            '*' => {
+                if self.match_char('=') {
+                    TokenType::StarEqual
+                } else {
+                    TokenType::Star
+                }
+            }
+            '%' => {
+                if self.match_char('=') {
+                    TokenType::PercentEqual
+                } else {
+                    TokenType::Percent
+                }
+            }
+            '&' => {
+                if self.match_char('&') {
+                    TokenType::LogicalAnd
+                } else if self.match_char('=') {
+                    TokenType::BitwiseAndEqual
+                } else {
+                    TokenType::BitwiseAnd
+                }
+            }
+            '|' => {
+                if self.match_char('|') {
+                    TokenType::LogicalOr
+                } else if self.match_char('=') {
+                    TokenType::BitwiseOrEqual
+                } else {
+                    TokenType::BitwiseOr
+                }
+            }
+            '^' => {
+                if self.match_char('=') {
+                    TokenType::BitwiseXorEqual
+                } else {
+                    TokenType::BitwiseXor
+                }
+            }
+            _ => return Err(Error::Lexer(LexerError::UnexpectedCharacter(value))),
+        };
+
+        Ok(token_type)
+    }
+
+    /// Advances the lexer by one character.
+    ///
+    /// # Returns
+    ///
+    /// * `Option<char>`: The character that was advanced to, if any.
+    fn advance(&mut self) -> Option<char> {
         self.current += 1;
         self.column += 1;
 
-        self.source
-            .chars()
-            .nth(self.current - 1)
-            .expect("Scanner tried to advance past the end of the source code!")
+        self.source.chars().nth(self.current - 1)
     }
 
     /// Adds a token to the vector of tokens.
     ///
     /// # Arguments
+    ///
     /// * `token_type` - The type of the token.
     ///
+    /// # Returns
     ///
-    fn add_token(&mut self, token_type: TokenType) {
-        let text = self.source[self.start..self.current].to_string();
+    /// * `Result<(), Error>`: The result of the operation.
+    ///
+    /// # Errors
+    ///
+    /// * If the token cannot be converted to a number literal.
+    fn add_token(&mut self, token_type: TokenType) -> Result<(), Error> {
+        let text = &self.source[self.start..self.current];
         let literal = match token_type {
-            TokenType::String => Some(Literal::String(text.clone())),
-            TokenType::Number => Some(Literal::Number(text.parse().unwrap())),
+            TokenType::String => Some(Literal::String(text.to_string())),
+            TokenType::Number => Some(Literal::Number(text.parse()?)),
             TokenType::True => Some(Literal::Boolean(true)),
             TokenType::False => Some(Literal::Boolean(false)),
-            TokenType::None => Some(Literal::None),
             _ => None,
         };
 
         self.tokens.push(Token::new(
             token_type,
-            text.as_str(),
+            text,
             literal,
             self.line,
             self.column,
         ));
+
+        Ok(())
     }
 
     /// Checks if the next character matches the given character.
     ///
     /// # Arguments
+    ///
     /// * `expected` - The character to match.
     ///
     /// # Returns
-    /// True if the next character matches the given character, false otherwise.
+    ///
+    /// * `bool`: True if the next character matches the given character, false otherwise.
     fn match_char(&mut self, expected: char) -> bool {
+        // If we've reached the end of the file, we cannot match the character.
         if self.is_at_end() {
             return false;
         }
 
-        if self.source.chars().nth(self.current).unwrap() != expected {
+        // If the current character doesn't match the expected character, it fails.
+        if self.source.chars().nth(self.current) != Some(expected) {
             return false;
         }
 
+        // Increment the current character and column because we've now checked the character.
         self.current += 1;
         self.column += 1;
 
@@ -1051,92 +595,143 @@ impl Scanner {
     /// Checks if we are at the end of the source code.
     ///
     /// # Returns
-    /// True if we are at the end of the source code, false otherwise.
+    ///
+    /// * `bool`: True if the current character is greater than or equal to the length of the source code.
     fn is_at_end(&self) -> bool {
         self.current >= self.source.len()
     }
 
-    /// Peeks at the next character without advancing the scanner.
+    /// Peeks at the current character without advancing the lexer.
     ///
     /// # Returns
-    /// The next character.
     ///
-    /// # Panics
-    /// Panics if the scanner tries to peek past the end of the source code.
-    fn peek(&self) -> char {
-        self.source
-            .chars()
-            .nth(self.current)
-            .expect("Scanner tried to peek past the end of the source code!")
+    /// * `Option<char>`: The current character, if any.
+    fn peek(&self) -> Option<char> {
+        self.source.chars().nth(self.current)
     }
 
-    /// Peeks at the character after the next character without advancing the scanner.
+    /// Peeks at the next `n` characters after the current character without advancing the lexer.
+    ///
+    /// # Arguments
+    ///
+    /// * `n`: How far to peek into the source.
     ///
     /// # Returns
-    /// The character after the next character.
     ///
-    /// # Panics
-    /// Panics if the scanner tries to peek past the end of the source code.
-    fn peek_next(&self) -> char {
-        self.source
-            .chars()
-            .nth(self.current + 1)
-            .expect("Scanner tried to peek past the end of the source code!")
+    /// * `Option<String>`: The next `n` characters, if any.
+    fn peek_next(&self, n: usize) -> Option<String> {
+        (self.current..=n)
+            .map(|i| self.source.chars().nth(i))
+            .filter(Option::is_some)
+            .collect()
     }
 
-    fn string(&mut self) {
-        while self.peek() != '"' && !self.is_at_end() {
-            if self.peek() == '\\' {
+    /// Lexes a string token.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<(), Error>`: The result of the operation.
+    ///
+    /// # Errors
+    ///
+    /// * If the string is unterminated.
+    /// * If we cannot get the last token.
+    fn string(&mut self) -> Result<(), Error> {
+        while self.peek() != Some('"') && !self.is_at_end() {
+            if self.peek() == Some('\\') {
                 self.advance();
                 self.column += 1;
             }
 
-            if self.peek() == '\n' {
-                self.line += 1;
-                self.column = 1;
+            if self.peek() == Some('\n') {
+                self.new_line();
             }
 
             self.advance();
         }
 
         if self.is_at_end() {
-            panic!("Unterminated string!");
+            return Err(Error::Lexer(LexerError::UnterminatedString));
         }
 
         self.advance();
 
-        let value = self.source[self.start + 1..self.current - 1].to_string();
-        self.add_token(TokenType::String);
+        self.add_token(TokenType::String)?;
+        let value = &self.source[self.start + 1..self.current - 1];
 
-        self.tokens.last_mut().unwrap().literal = Some(Literal::String(value));
+        // Set the last token to the string literal.
+        self.tokens
+            .last_mut()
+            .ok_or(Error::Lexer(LexerError::InvalidToken(
+                "Failed to get last token!".into(),
+            )))?
+            .literal = Some(Literal::String(value.to_string()));
+
+        Ok(())
     }
 
-    fn number(&mut self) {
-        while self.peek().is_ascii_digit() {
-            self.advance();
-        }
-
-        if self.peek() == '.' && self.peek_next().is_ascii_digit() {
-            self.advance();
-
-            while self.peek().is_ascii_digit() {
-                self.advance();
+    /// Lexes a number token.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<(), Error>`: The result of the operation.
+    ///
+    /// # Errors
+    ///
+    /// * If the lexer fails to peek at the current, next or last token.
+    /// * If the number fails to parse.
+    fn number(&mut self) -> Result<(), Error> {
+        // Keep reading until the number ends.
+        let start = self.current;
+        loop {
+            let Some(next) = self.peek() else {
+                break;
+            };
+            if !next.is_ascii_digit() && next != '.' {
+                break;
             }
-        }
 
-        let value = self.source[self.start..self.current].to_string();
-        self.add_token(TokenType::Number);
-
-        self.tokens.last_mut().unwrap().literal = Some(Literal::Number(value.parse().unwrap()));
-    }
-
-    fn identifier(&mut self) {
-        while self.peek().is_alphanumeric() || self.peek() == '_' {
             self.advance();
         }
 
-        let text = self.source[self.start..self.current].to_string();
-        let token_type = match text.as_str() {
+        self.add_token(TokenType::Number)?;
+        let value = &self.source[start..self.current];
+
+        // Set the last token to the number literal.
+        self.tokens
+            .last_mut()
+            .ok_or(Error::Lexer(LexerError::InvalidToken(
+                "Failed to get last token!".into(),
+            )))?
+            .literal = Some(Literal::Number(value.parse()?));
+
+        Ok(())
+    }
+
+    /// Lexes an identifier.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<(), Error>`: The result of the operation.
+    ///
+    /// # Errors
+    ///
+    /// * If the lexer fails to peek at the current token.
+    fn identifier(&mut self) -> Result<(), Error> {
+        // While the current token is alphanumeric or an _, we are reading an identifier.
+        while self
+            .peek()
+            .ok_or(Error::Lexer(LexerError::InvalidToken(
+                "Failed to peek at current token!".into(),
+            )))?
+            .is_alphanumeric()
+            || self.peek() == Some('_')
+        {
+            self.advance();
+        }
+
+        let text = &self.source[self.start..self.current];
+        let token_type = match text {
             "fn" => TokenType::Function,
             "if" => TokenType::If,
             "else" => TokenType::Else,
@@ -1152,16 +747,62 @@ impl Scanner {
             "str" => TokenType::String,
             "true" => TokenType::True,
             "false" => TokenType::False,
-            "none" => TokenType::None,
-            "print" => TokenType::Print,
             "return" => TokenType::Return,
             "let" => TokenType::Variable,
             "const" => TokenType::Constant,
             _ => TokenType::Identifier,
         };
 
-        self.add_token(token_type);
+        self.add_token(token_type)?;
+
+        Ok(())
     }
+
+    /// Increments the [`line`] count and sets the [`column`] back to `1`.
+    fn new_line(&mut self) {
+        self.line += 1;
+        self.column = 1;
+    }
+}
+
+/// Reads the contents of a given file.
+///
+/// # Arguments
+///
+/// * `path`: The path of the file.
+///
+/// # Returns
+///
+/// * `Result<String, Error>`: The contents of the file, or an error.
+///
+/// # Errors
+///
+/// * If the file doesn't have a file extension.
+/// * If we cannot convert the file extension to a `&str`.
+/// * If the file extension doesn't match [`FILE_EXTENSION`].
+pub fn read_file(path: &str) -> Result<String, Error> {
+    // Get the file extension.
+    let extension = Path::new(path)
+        .extension()
+        .ok_or(Error::Lexer(LexerError::InvalidFile(
+            "{path} doesn't have a file extension!".into(),
+        )))?
+        .to_str()
+        .ok_or(Error::Lexer(LexerError::InvalidFile(
+            "Failed to convert extension to string slice!".into(),
+        )))?;
+
+    // Check if the file extension is valid.
+    if extension != FILE_EXTENSION {
+        return Err(Error::Lexer(LexerError::InvalidFile(format!(
+            "{path} isn't a valid {FILE_EXTENSION} file, found {extension}!"
+        ))));
+    }
+
+    // Read the file.
+    let contents = std::fs::read_to_string(path)?;
+
+    Ok(contents)
 }
 
 #[cfg(test)]
@@ -1169,11 +810,12 @@ mod tests {
     use super::*;
 
     #[test]
+    #[allow(clippy::expect_used, clippy::cognitive_complexity)]
     fn test_scan_tokens() {
         let source =
             "let a = 1 + 2 - 3 * 4 / 5 == 6 != 7 < 8 <= 9 > 10 >= 11 % 12 && true != false;";
-        let mut scanner = Scanner::new(source);
-        let tokens = scanner.scan_tokens();
+        let mut lexer = Lexer::new(source);
+        let tokens = lexer.scan_tokens().expect("Failed to scan tokens!");
 
         assert_eq!(tokens.len(), 31 + 1); // 31 tokens, plus EOF.
 
@@ -1212,6 +854,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::expect_used, clippy::cognitive_complexity)]
     fn test_scan_tokens_with_strings() {
         let source = r#"
             let a = "Hello, world!";
@@ -1223,8 +866,8 @@ mod tests {
             let g = "Hello, \0world!";
             let h = "Hello, \x00world!";
         "#;
-        let mut scanner = Scanner::new(source);
-        let tokens = scanner.scan_tokens();
+        let mut lexer = Lexer::new(source);
+        let tokens = lexer.scan_tokens().expect("Failed to scan tokens!");
 
         assert_eq!(tokens.len(), 8 * 5 + 1); // 8 lines, 5 tokens per line, plus EOF.
 
