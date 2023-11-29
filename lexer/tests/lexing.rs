@@ -11,7 +11,7 @@ fn test_function() {
         ";
 
     let mut lexer = Lexer::new(input);
-    let tokens = lexer.lex().unwrap();
+    let tokens = lexer.tokenize().unwrap();
 
     let actual_token_kinds: Vec<TokenKind> =
         tokens.iter().map(|token| token.kind.clone()).collect();
@@ -27,8 +27,7 @@ fn test_function() {
         TokenKind::Colon,
         TokenKind::Identifier("int".into()),
         TokenKind::RightParenthesis,
-        TokenKind::Minus,
-        TokenKind::Greater,
+        TokenKind::Arrow,
         TokenKind::Identifier("int".into()),
         TokenKind::LeftCurlyBrace,
         TokenKind::Return,
@@ -37,7 +36,7 @@ fn test_function() {
         TokenKind::Identifier("b".into()),
         TokenKind::Semicolon,
         TokenKind::RightCurlyBrace,
-        TokenKind::EOF,
+        TokenKind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);
@@ -45,7 +44,7 @@ fn test_function() {
 
 #[test]
 #[allow(clippy::unwrap_used)]
-fn test_variable() {
+fn test_variables() {
     let input = r#"
         let a = 10;
         let b = true;
@@ -53,27 +52,27 @@ fn test_variable() {
         "#;
 
     let mut lexer = Lexer::new(input);
-    let tokens = lexer.lex().unwrap();
+    let tokens = lexer.tokenize().unwrap();
 
     let actual_token_kinds: Vec<TokenKind> =
         tokens.iter().map(|token| token.kind.clone()).collect();
     let expected_token_kinds = [
         TokenKind::Variable,
         TokenKind::Identifier("a".into()),
-        TokenKind::Equal,
+        TokenKind::Assign,
         TokenKind::Integer(10),
         TokenKind::Semicolon,
         TokenKind::Variable,
         TokenKind::Identifier("b".into()),
-        TokenKind::Equal,
+        TokenKind::Assign,
         TokenKind::True,
         TokenKind::Semicolon,
         TokenKind::Variable,
         TokenKind::Identifier("c".into()),
-        TokenKind::Equal,
+        TokenKind::Assign,
         TokenKind::String("Hello, world!".into()),
         TokenKind::Semicolon,
-        TokenKind::EOF,
+        TokenKind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);
@@ -94,19 +93,19 @@ fn test_if_else() {
         "#;
 
     let mut lexer = Lexer::new(input);
-    let tokens = lexer.lex().unwrap();
+    let tokens = lexer.tokenize().unwrap();
 
     let actual_token_kinds: Vec<TokenKind> =
         tokens.iter().map(|token| token.kind.clone()).collect();
     let expected_token_kinds = [
         TokenKind::Variable,
         TokenKind::Identifier("a".into()),
-        TokenKind::Equal,
+        TokenKind::Assign,
         TokenKind::Integer(10),
         TokenKind::Semicolon,
         TokenKind::If,
         TokenKind::Identifier("a".into()),
-        TokenKind::Less,
+        TokenKind::LessThan,
         TokenKind::Integer(10),
         TokenKind::LeftCurlyBrace,
         TokenKind::Identifier("println".into()),
@@ -118,7 +117,7 @@ fn test_if_else() {
         TokenKind::Else,
         TokenKind::If,
         TokenKind::Identifier("a".into()),
-        TokenKind::Greater,
+        TokenKind::GreaterThan,
         TokenKind::Integer(10),
         TokenKind::LeftCurlyBrace,
         TokenKind::Identifier("println".into()),
@@ -135,7 +134,7 @@ fn test_if_else() {
         TokenKind::RightParenthesis,
         TokenKind::Semicolon,
         TokenKind::RightCurlyBrace,
-        TokenKind::EOF,
+        TokenKind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);
@@ -152,27 +151,27 @@ fn test_while() {
         ";
 
     let mut lexer = Lexer::new(input);
-    let tokens = lexer.lex().unwrap();
+    let tokens = lexer.tokenize().unwrap();
 
     let actual_token_kinds: Vec<TokenKind> =
         tokens.iter().map(|token| token.kind.clone()).collect();
     let expected_token_kinds = [
         TokenKind::Variable,
         TokenKind::Identifier("a".into()),
-        TokenKind::Equal,
+        TokenKind::Assign,
         TokenKind::Integer(0),
         TokenKind::Semicolon,
         TokenKind::While,
         TokenKind::Identifier("a".into()),
-        TokenKind::Less,
+        TokenKind::LessThan,
         TokenKind::Integer(10),
         TokenKind::LeftCurlyBrace,
         TokenKind::Identifier("a".into()),
-        TokenKind::PlusEqual,
+        TokenKind::AddAssign,
         TokenKind::Integer(1),
         TokenKind::Semicolon,
         TokenKind::RightCurlyBrace,
-        TokenKind::EOF,
+        TokenKind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);
@@ -182,23 +181,22 @@ fn test_while() {
 #[allow(clippy::unwrap_used)]
 fn test_for() {
     let input = r"
-        for i in 0..10 {
+        for i in 0 to 10 {
             println(i);
         }
         ";
 
     let mut lexer = Lexer::new(input);
-    let tokens = lexer.lex().unwrap();
+    let tokens = lexer.tokenize().unwrap();
 
     let actual_token_kinds: Vec<TokenKind> =
         tokens.iter().map(|token| token.kind.clone()).collect();
     let expected_token_kinds = [
         TokenKind::For,
         TokenKind::Identifier("i".into()),
-        TokenKind::In,
+        TokenKind::Range,
         TokenKind::Integer(0),
-        TokenKind::Dot,
-        TokenKind::Dot,
+        TokenKind::To,
         TokenKind::Integer(10),
         TokenKind::LeftCurlyBrace,
         TokenKind::Identifier("println".into()),
@@ -207,7 +205,7 @@ fn test_for() {
         TokenKind::RightParenthesis,
         TokenKind::Semicolon,
         TokenKind::RightCurlyBrace,
-        TokenKind::EOF,
+        TokenKind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);
@@ -228,35 +226,35 @@ fn test_break() {
         ";
 
     let mut lexer = Lexer::new(input);
-    let tokens = lexer.lex().unwrap();
+    let tokens = lexer.tokenize().unwrap();
 
     let actual_token_kinds: Vec<TokenKind> =
         tokens.iter().map(|token| token.kind.clone()).collect();
     let expected_token_kinds = [
         TokenKind::Variable,
         TokenKind::Identifier("a".into()),
-        TokenKind::Equal,
+        TokenKind::Assign,
         TokenKind::Integer(0),
         TokenKind::Semicolon,
         TokenKind::While,
         TokenKind::Identifier("a".into()),
-        TokenKind::Less,
+        TokenKind::LessThan,
         TokenKind::Integer(10),
         TokenKind::LeftCurlyBrace,
         TokenKind::If,
         TokenKind::Identifier("a".into()),
-        TokenKind::EqualEqual,
+        TokenKind::Equality,
         TokenKind::Integer(5),
         TokenKind::LeftCurlyBrace,
         TokenKind::Break,
         TokenKind::Semicolon,
         TokenKind::RightCurlyBrace,
         TokenKind::Identifier("a".into()),
-        TokenKind::PlusEqual,
+        TokenKind::AddAssign,
         TokenKind::Integer(1),
         TokenKind::Semicolon,
         TokenKind::RightCurlyBrace,
-        TokenKind::EOF,
+        TokenKind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);
@@ -277,35 +275,35 @@ fn test_continue() {
         ";
 
     let mut lexer = Lexer::new(input);
-    let tokens = lexer.lex().unwrap();
+    let tokens = lexer.tokenize().unwrap();
 
     let actual_token_kinds: Vec<TokenKind> =
         tokens.iter().map(|token| token.kind.clone()).collect();
     let expected_token_kinds = [
         TokenKind::Variable,
         TokenKind::Identifier("a".into()),
-        TokenKind::Equal,
+        TokenKind::Assign,
         TokenKind::Integer(0),
         TokenKind::Semicolon,
         TokenKind::While,
         TokenKind::Identifier("a".into()),
-        TokenKind::Less,
+        TokenKind::LessThan,
         TokenKind::Integer(10),
         TokenKind::LeftCurlyBrace,
         TokenKind::If,
         TokenKind::Identifier("a".into()),
-        TokenKind::EqualEqual,
+        TokenKind::Equality,
         TokenKind::Integer(5),
         TokenKind::LeftCurlyBrace,
         TokenKind::Continue,
         TokenKind::Semicolon,
         TokenKind::RightCurlyBrace,
         TokenKind::Identifier("a".into()),
-        TokenKind::PlusEqual,
+        TokenKind::AddAssign,
         TokenKind::Integer(1),
         TokenKind::Semicolon,
         TokenKind::RightCurlyBrace,
-        TokenKind::EOF,
+        TokenKind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);
@@ -321,7 +319,7 @@ fn test_return() {
         ";
 
     let mut lexer = Lexer::new(input);
-    let tokens = lexer.lex().unwrap();
+    let tokens = lexer.tokenize().unwrap();
 
     let actual_token_kinds: Vec<TokenKind> =
         tokens.iter().map(|token| token.kind.clone()).collect();
@@ -337,8 +335,7 @@ fn test_return() {
         TokenKind::Colon,
         TokenKind::Identifier("int".into()),
         TokenKind::RightParenthesis,
-        TokenKind::Minus,
-        TokenKind::Greater,
+        TokenKind::Arrow,
         TokenKind::Identifier("int".into()),
         TokenKind::LeftCurlyBrace,
         TokenKind::Return,
@@ -347,7 +344,7 @@ fn test_return() {
         TokenKind::Identifier("b".into()),
         TokenKind::Semicolon,
         TokenKind::RightCurlyBrace,
-        TokenKind::EOF,
+        TokenKind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);
@@ -357,31 +354,34 @@ fn test_return() {
 #[allow(clippy::unwrap_used)]
 fn test_comments() {
     let input = r"
-        // This is a comment.
-        let a = 10; // This is another comment.
-        /* This is a multi-line comment.
-        It spans multiple lines. */
-        let b = 20; /* This is another multi-line comment.
-        It also spans multiple lines. */
+        // This is a single-line comment.
+        let a = 10; // This is another single-line comment.
+
+        /*
+         This is a multi-line comment,
+         it can span multiple lines!
+        */
+
+        let b = 20; /* This is another multi-line comment, it doesnt span multiple lines. */
         ";
 
     let mut lexer = Lexer::new(input);
-    let tokens = lexer.lex().unwrap();
+    let tokens = lexer.tokenize().unwrap();
 
     let actual_token_kinds: Vec<TokenKind> =
         tokens.iter().map(|token| token.kind.clone()).collect();
     let expected_token_kinds = [
         TokenKind::Variable,
         TokenKind::Identifier("a".into()),
-        TokenKind::Equal,
+        TokenKind::Assign,
         TokenKind::Integer(10),
         TokenKind::Semicolon,
         TokenKind::Variable,
         TokenKind::Identifier("b".into()),
-        TokenKind::Equal,
+        TokenKind::Assign,
         TokenKind::Integer(20),
         TokenKind::Semicolon,
-        TokenKind::EOF,
+        TokenKind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);
