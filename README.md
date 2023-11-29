@@ -15,7 +15,7 @@ $ cargo build --release
 To run the tests, use the following command:
 
 ```bash
-$ cargo test
+$ cargo tests
 ```
 
 ## Docker Image

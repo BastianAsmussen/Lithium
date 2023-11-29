@@ -1,0 +1,18 @@
+[package]
+name = "lexer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+utils = { path = "../utils" }
+
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+
+[[bench]]
+name = "lex_large_file"
+harness = false
+
+[[bench]]
+name = "lex_hello_world"
+harness = false

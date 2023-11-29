@@ -1,13 +1,14 @@
+[workspace]
+resolver = "2"
+members = [
+    "lexer",
+    "utils",
+]
+
 [package]
 name = "lithium"
 version = "0.1.0"
 edition = "2021"
-license-file = "LICENSE"
 
 [dependencies]
-clap = { version = "4.4.10", features = ["derive"] }
-
-thiserror = "1.0.50"
-color-eyre = "0.6.2"
-
-inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm15-0-no-llvm-linking"] }
+lexer = { path = "lexer" }
