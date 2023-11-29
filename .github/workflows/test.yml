@@ -1,16 +1,18 @@
 name: Test
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_run:
+    workflows: ["Build"]
+    branches: [main]
+    types:
+      - completed
 
 env:
   CARGO_TERM_COLOR: always
 
-test:
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v3
-    - name: Testing...
-      run: cargo test --workspace
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Testing...
+        run: cargo test --workspace

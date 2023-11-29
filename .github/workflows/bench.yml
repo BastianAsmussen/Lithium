@@ -1,21 +1,23 @@
 name: Benchmark
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_run:
+    workflows: ["Build"]
+    branches: [main]
+    types:
+      - completed
 
 env:
   CARGO_TERM_COLOR: always
 
-bench:
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v3
-    - name: Benchmarking...
-      run: cargo bench --workspace
-    - name: Saving results...
-      uses: actions/upload-artifact@v2
-      with:
-        name: benchmark-results
-        path: target/criterion
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Benchmarking...
+        run: cargo bench --workspace
+      - name: Saving results...
+        uses: actions/upload-artifact@v2
+        with:
+          name: benchmark-results
+          path: target/criterion
