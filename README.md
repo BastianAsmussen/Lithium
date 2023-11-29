@@ -1,13 +1,30 @@
-# Lithium
+# About
 
-A simple programming language.
+This is a simple programming language written in Rust for learning purposes.
+It is a statically typed, compiled language with a syntax very similar to Rust.
+
+## Statistics
+[![Build](https://github.com/BastianAsmussen/Lithium/actions/workflows/build.yml/badge.svg)](https://github.com/BastianAsmussen/Lithium/actions/workflows/build.yml)  
+[![Tests](https://github.com/BastianAsmussen/Lithium/actions/workflows/test.yml/badge.svg)](https://github.com/BastianAsmussen/Lithium/actions/workflows/test.yml)  
+[![Benchmarks](https://github.com/BastianAsmussen/Lithium/actions/workflows/bench.yml/badge.svg)](https://github.com/BastianAsmussen/Lithium/actions/workflows/bench.yml)  
+![License](https://img.shields.io/github/license/BastianAsmussen/Lithium)
+
+## Table of Contents
+
+- [About](#about)
+- [Compiling](#compiling)
+- [Testing](#testing)
+- [Benchmarking](#benchmarking)
+- [Usage](#usage)
+- [Syntax](#syntax)
+- [Contributing](#contributing)
 
 ## Compiling
 
 To compile the compiler, we use Cargo (get it [here](https://rustup.rs/)).
 
 ```bash
-$ cargo build --release
+$ cargo build --release --workspace
 ```
 
 ## Testing
@@ -15,21 +32,15 @@ $ cargo build --release
 To run the tests, use the following command:
 
 ```bash
-$ cargo tests
+$ cargo test --workspace
 ```
 
-## Docker Image
+## Benchmarking
 
-To build the Docker image, use the following command:
-
-```bash
-$ docker build -t lithium .
-```
-
-To run the Docker image, use the following command:
+To run the benchmarks, use the following command:
 
 ```bash
-$ docker run -it --rm lithium
+$ cargo bench --workspace
 ```
 
 ## Usage
@@ -37,7 +48,7 @@ $ docker run -it --rm lithium
 To compile a Lithium program, use the following command:
 
 ```bash
-$ lt <input file> <output file>
+$ lithium <input file> <output file>
 ```
 
 ## Syntax
@@ -46,11 +57,11 @@ The syntax is very simple. Here is an example program:
 
 ```lt
 // This is a comment.
-fn hello(name: str) {
-    print("Hello, " + name + "!");
+fn greet(name: str) -> str {
+    return "Hello, " + name + "!";
 }
 
-hello("world");
+print(greet("World"));
 ```
 
 ## License
