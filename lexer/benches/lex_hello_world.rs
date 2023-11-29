@@ -4,10 +4,10 @@ use criterion::{criterion_group, criterion_main, Criterion};
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("lex hello world", |b| {
         b.iter(|| {
-            let contents = std::fs::read_to_string("examples/hello_world.lt").unwrap();
+            let contents = std::fs::read_to_string("../examples/hello_world.lt").unwrap();
 
             let mut lexer = lexer::Lexer::new(&contents);
-            let _ = lexer.lex().unwrap();
+            let _ = lexer.tokenize().unwrap();
         });
     });
 }

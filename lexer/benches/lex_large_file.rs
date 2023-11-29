@@ -2,12 +2,12 @@ use criterion::{criterion_group, criterion_main, Criterion};
 
 #[allow(clippy::unwrap_used)]
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("lex hello world", |b| {
+    c.bench_function("lex large file", |b| {
         b.iter(|| {
-            let contents = std::fs::read_to_string("examples/large_file.lt").unwrap();
+            let contents = std::fs::read_to_string("../examples/large_file.lt").unwrap();
 
             let mut lexer = lexer::Lexer::new(&contents);
-            let _ = lexer.lex().unwrap();
+            let _ = lexer.tokenize().unwrap();
         });
     });
 }

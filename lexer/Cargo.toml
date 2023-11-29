@@ -10,9 +10,9 @@ thiserror = "1.0.50"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [[bench]]
-name = "lex_large_file"
+name = "lex_hello_world"
 harness = false
 
 [[bench]]
-name = "lex_hello_world"
+name = "lex_large_file"
 harness = false
