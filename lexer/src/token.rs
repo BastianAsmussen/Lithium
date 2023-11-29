@@ -7,27 +7,38 @@
 /// * `Float(f64)` - A float, such as `1.23` or `4.56`.
 /// * `String(String)` - A string, such as `"foo"` or `"bar"`.
 /// * `Plus` - A plus sign, `+`.
-/// * `PlusEqual` - A plus-equal sign, `+=`.
+/// * `Increment` - An increment operator, `++`.
+/// * `AddAssign` - An add-assign operator, `+=`.
 /// * `Minus` - A minus sign, `-`.
-/// * `MinusEqual` - A minus-equal sign, `-=`.
+/// * `Decrement` - A decrement operator, `--`.
+/// * `SubtractAssign` - A subtract-assign operator, `-=`.
 /// * `Asterisk` - An asterisk, `*`.
-/// * `AsteriskEqual` - An asterisk-equal sign, `*=`.
+/// * `Power` - A power operator, `**`.
+/// * `MultiplyAssign` - A multiply-assign operator, `*=`.
 /// * `Slash` - A slash, `/`.
-/// * `SlashEqual` - A slash-equal sign, `/=`.
+/// * `DivisionAssign` - A division-assign operator, `/=`.
 /// * `Percent` - A percent sign, `%`.
-/// * `PercentEqual` - A percent-equal sign, `%=`.
+/// * `ModuloAssign` - A modulo-assign operator, `%=`.
 /// * `Caret` - A caret, `^`.
-/// * `CaretEqual` - A caret-equal sign, `^=`.
+/// * `BitwiseXorAssign` - A bitwise-xor-assign operator, `^=`.
 /// * `Bang` - A bang, `!`.
-/// * `BangEqual` - A bang-equal sign, `!=`.
-/// * `Equal` - An equal sign, `=`.
-/// * `EqualEqual` - An equal-equal sign, `==`.
-/// * `Less` - A less-than sign, `<`.
-/// * `LessEqual` - A less-than-equal sign, `<=`.
-/// * `Greater` - A greater-than sign, `>`.
-/// * `GreaterEqual` - A greater-than-equal sign, `>=`.
-/// * `And` - An and sign, `&`.
-/// * `Or` - An or sign, `|`.
+/// * `NotEqual` - A not-equal operator, `!=`.
+/// * `Assign` - An equal sign, `=`.
+/// * `Equality` - An equality operator, `==`.
+/// * `LessThan` - A less-than operator, `<`.
+/// * `BitwiseLeftShift` - A bitwise-left-shift operator, `<<`.
+/// * `BitwiseLeftShiftAssign` - A bitwise-left-shift-assign operator, `<<=`.
+/// * `LessThanOrEqual` - A less-than-or-equal operator, `<=`.
+/// * `GreaterThan` - A greater-than operator, `>`.
+/// * `BitwiseRightShift` - A bitwise-right-shift operator, `>>`.
+/// * `BitwiseRightShiftAssign` - A bitwise-right-shift-assign operator, `>>=`.
+/// * `GreaterThanOrEqual` - A greater-than-or-equal operator, `>=`.
+/// * `BitwiseAnd` - A bitwise-and operator, `&`.
+/// * `LogicalAnd` - A logical-and operator, `&&`.
+/// * `BitwiseAndAssign` - A bitwise-and-assign operator, `&=`.
+/// * `BitwiseOr` - A bitwise-or operator, `|`.
+/// * `BitwiseOrAssign` - A bitwise-or-assign operator, `|=`.
+/// * `LogicalOr` - A logical-or operator, `||`.
 /// * `LeftParenthesis` - A left parenthesis, `(`.
 /// * `RightParenthesis` - A right parenthesis, `)`.
 /// * `LeftCurlyBrace` - A left curly brace, `{`.
@@ -45,13 +56,15 @@
 /// * `Else` - An else keyword, `else`.
 /// * `While` - A while keyword, `while`.
 /// * `For` - A for keyword, `for`.
-/// * `In` - An in keyword, `in`.
+/// * `Range` - A range keyword, `in`.
+/// * `To` - A to keyword, `to`.
 /// * `Break` - A break keyword, `break`.
 /// * `Continue` - A continue keyword, `continue`.
 /// * `Return` - A return keyword, `return`.
 /// * `Function` - A function keyword, `function`.
 /// * `Variable` - A variable keyword, `variable`.
-/// * `EOF` - An end-of-file token.
+/// * `Comment` - A comment, such as `// ...` or `/* ... */`.
+/// * `EndOfFile` - An end-of-file token.
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     Identifier(String),
@@ -59,27 +72,38 @@ pub enum TokenKind {
     Float(f64),
     String(String),
     Plus,
-    PlusEqual,
+    Increment,
+    AddAssign,
     Minus,
-    MinusEqual,
+    Decrement,
+    SubtractAssign,
     Asterisk,
-    AsteriskEqual,
+    Power,
+    MultiplyAssign,
     Slash,
-    SlashEqual,
+    DivisionAssign,
     Percent,
-    PercentEqual,
-    Caret,
-    CaretEqual,
+    ModuloAssign,
+    BitwiseXor,
+    BitwiseXorAssign,
     Bang,
-    BangEqual,
-    Equal,
-    EqualEqual,
-    Less,
-    LessEqual,
-    Greater,
-    GreaterEqual,
-    And,
-    Or,
+    NotEqual,
+    Assign,
+    Equality,
+    LessThan,
+    BitwiseLeftShift,
+    BitwiseLeftShiftAssign,
+    LessThanOrEqual,
+    GreaterThan,
+    BitwiseRightShift,
+    BitwiseRightShiftAssign,
+    GreaterThanOrEqual,
+    BitwiseAnd,
+    LogicalAnd,
+    BitwiseAndAssign,
+    BitwiseOr,
+    BitwiseOrAssign,
+    LogicalOr,
     LeftParenthesis,
     RightParenthesis,
     LeftCurlyBrace,
@@ -97,13 +121,15 @@ pub enum TokenKind {
     Else,
     While,
     For,
-    In,
+    Range,
+    To,
     Break,
     Continue,
     Return,
     Function,
     Variable,
-    EOF,
+    Comment,
+    EndOfFile,
 }
 
 /// A token, which is a single unit of a program.
