@@ -1,6 +1,0 @@
-// This is a comment.
-fn hello(name: str) {
-    print("Hello, " + name + "!");
-}
-
-hello("world");

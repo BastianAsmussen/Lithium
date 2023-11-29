@@ -1,0 +1,24 @@
+name: Bench Lithium
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+      - name: Benchmarking...
+        run: cargo bench --workspace
+      - name: Saving results...
+        uses: actions/upload-artifact@v2
+        with:
+          name: benchmark-results
+          path: target/criterion
