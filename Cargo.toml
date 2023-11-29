@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "lexer",
-    "utils",
+    "parser",
 ]
 
 [package]

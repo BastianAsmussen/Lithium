@@ -242,7 +242,7 @@ name = "lexer"
 version = "0.1.0"
 dependencies = [
  "criterion",
- "utils",
+ "thiserror",
 ]
 
 [[package]]
@@ -305,6 +305,14 @@ name = "oorandom"
 version = "11.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ab1bc2a289d34bd04a330323ac98a1b4bc82c9d9fcb1e66b63caa84da26b575"
+
+[[package]]
+name = "parser"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "thiserror",
+]
 
 [[package]]
 name = "plotters"
@@ -512,13 +520,6 @@ name = "unicode-ident"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
-
-[[package]]
-name = "utils"
-version = "0.1.0"
-dependencies = [
- "thiserror",
-]
 
 [[package]]
 name = "walkdir"
