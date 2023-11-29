@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-utils = { path = "../utils" }
+thiserror = "1.0.50"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
