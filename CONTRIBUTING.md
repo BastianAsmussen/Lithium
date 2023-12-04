@@ -29,6 +29,7 @@ Please make sure that your pull request follows the following guidelines:
 ## Checklist
 
 - [ ] I have read the [CONTRIBUTING](CONTRIBUTING.md) file.
-- [ ] I have run `cargo fmt` and `cargo test`.
+- [ ] I have run `cargo fmt`.
 - [ ] I have added unit tests for my code.
+- [ ] All tests passed when running `cargo test --workspace`.
 ```
