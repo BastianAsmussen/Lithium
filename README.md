@@ -27,6 +27,14 @@ To compile the compiler, we use Cargo (get it [here](https://rustup.rs/)).
 $ cargo build --release --workspace
 ```
 
+## Installing
+
+To install the compiler, use the following command:
+
+```bash
+$ cargo install --path .
+```
+
 ## Testing
 
 To run the tests, use the following command:
