@@ -7,7 +7,8 @@ use thiserror::Error;
 /// * `InvalidToken` - An invalid token.
 /// * `UnexpectedCharacter` - An unexpected character.
 /// * `UnterminatedString` - An unterminated string.
-/// * `ParseError` - A number parsing error.
+/// * `ParseIntError` - An integer parsing error.
+/// * `ParseFloatError` - A float parsing error.
 /// * `IoError` - An IO error.
 #[derive(Debug, Error)]
 pub enum Error {
@@ -21,8 +22,10 @@ pub enum Error {
     },
     #[error("Unterminated string at line {line}, column {column}!")]
     UnterminatedString { line: usize, column: usize },
-    #[error("Failed to parse number!")]
-    ParseError(#[from] std::num::ParseIntError),
+    #[error("Failed to parse integer!")]
+    ParseIntError(#[from] std::num::ParseIntError),
+    #[error("Failed to parse float!")]
+    ParseFloatError(#[from] std::num::ParseFloatError),
     #[error("IO error!")]
     IoError(#[from] std::io::Error),
 }
