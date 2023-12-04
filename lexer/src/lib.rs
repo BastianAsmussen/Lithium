@@ -91,22 +91,75 @@ impl<'a> Lexer<'a> {
         Token::new(token_type, self.line, self.column)
     }
 
-    fn read_number(&mut self) -> Result<Token, Error> {
-        let mut number = String::new();
-        while let Some(c) = self.current_char() {
-            if !c.is_numeric() {
-                break;
+    fn read_number(&mut self) -> Result<Option<Token>, Error> {
+        let is_positive = self.current_char() == Some('+');
+        let is_negative = self.current_char() == Some('-');
+        if is_positive || is_negative {
+            if let Some(c) = self.next_char() {
+                if !c.is_numeric() {
+                    return Ok(None);
+                }
             }
 
-            number.push(c);
             self.advance();
         }
 
-        Ok(Token::new(
-            TokenKind::Integer(number.parse()?),
-            self.line,
-            self.column,
-        ))
+        let mut number = String::new();
+        // We allow scientific notation, floating point notation, binary, octal, and hexadecimal numbers.
+        let allowed_chars = ['+', '-', 'e', 'E', '.', 'b', 'B', 'o', 'O', 'x', 'X'];
+        while let Some(c) = self.current_char() {
+            if !c.is_numeric() && !allowed_chars.contains(&c) {
+                break;
+            }
+
+            self.advance();
+
+            number.push(c);
+        }
+
+        let number = number.trim();
+        if number.is_empty() {
+            return Err(Error::UnexpectedCharacter {
+                char: self.current_char(),
+                line: self.line,
+                column: self.column,
+            });
+        }
+
+        let token_type = if number.contains('.') || number.contains('e') || number.contains('E') {
+            let number = number.parse::<f64>()?;
+
+            TokenKind::Float(number)
+        } else if number.contains('b') || number.contains('B') {
+            let number = i64::from_str_radix(&number[2..], 2)?;
+
+            TokenKind::Integer(number)
+        } else if number.contains('o') || number.contains('O') {
+            let number = i64::from_str_radix(&number[2..], 8)?;
+
+            TokenKind::Integer(number)
+        } else if number.contains('x') || number.contains('X') {
+            let number = i64::from_str_radix(&number[2..], 16)?;
+
+            TokenKind::Integer(number)
+        } else {
+            let number = number.parse::<i64>()?;
+
+            TokenKind::Integer(number)
+        };
+
+        // If the number is negative, then we need to negate it.
+        let token_type = if is_negative {
+            match token_type {
+                TokenKind::Integer(number) => TokenKind::Integer(-number),
+                TokenKind::Float(number) => TokenKind::Float(-number),
+                _ => unreachable!(),
+            }
+        } else {
+            token_type
+        };
+
+        Ok(Some(Token::new(token_type, self.line, self.column)))
     }
 
     fn read_string(&mut self) -> Result<Token, Error> {
@@ -114,6 +167,36 @@ impl<'a> Lexer<'a> {
 
         let mut string = String::new();
         while let Some(c) = self.current_char() {
+            if c == '\\' {
+                // Escape character.
+                self.advance();
+
+                let Some(c) = self.current_char() else {
+                    return Err(Error::UnterminatedString {
+                        line: self.line,
+                        column: self.column,
+                    });
+                };
+
+                match c {
+                    'n' => string.push('\n'),
+                    'r' => string.push('\r'),
+                    't' => string.push('\t'),
+                    '\\' => string.push('\\'),
+                    '"' => string.push('"'),
+                    _ => {
+                        return Err(Error::UnexpectedCharacter {
+                            char: Some(c),
+                            line: self.line,
+                            column: self.column,
+                        })
+                    }
+                }
+
+                self.advance();
+                continue;
+            }
+
             if c == '"' {
                 self.advance();
 
@@ -196,7 +279,11 @@ impl<'a> Lexer<'a> {
             }
             Some('/') => {
                 // Single-line comment, ignore until a new-line.
-                while self.current_char() != Some('\n') {
+                while let Some(c) = self.current_char() {
+                    if c == '\n' {
+                        break;
+                    }
+
                     self.advance();
                 }
 
@@ -401,7 +488,14 @@ impl<'a> Lexer<'a> {
         let current_char = self.current_char();
         let token = match current_char {
             Some(c) if c.is_alphabetic() || c == '_' => self.read_identifier(),
-            Some(c) if c.is_numeric() => self.read_number()?,
+            Some(c) if c.is_numeric() || c == '+' || c == '-' => {
+                // If we receive a None, then we know it's not a number, so we can read an operator.
+                let Some(token) = self.read_number()? else {
+                    return self.read_operator()
+                };
+
+                token
+            },
             Some('"') => self.read_string()?,
             None => Token::new(TokenKind::EndOfFile, self.line, self.column),
             _ => self.read_operator()?,
