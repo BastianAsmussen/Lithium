@@ -541,3 +541,37 @@ impl<'a> Lexer<'a> {
         Ok(tokens)
     }
 }
+
+/// Reads a `.lt` file and returns its contents.
+///
+/// # Arguments
+///
+/// * `path` - The path to the file.
+///
+/// # Returns
+///
+/// * `Result<String, Error>` - The contents of the file, or an error.
+///
+/// # Errors
+///
+/// * If the file doesn't exist.
+/// * If the file doesn't end in `.lt`.
+/// * If the file can't be read.
+pub fn read_file(path: &str) -> Result<String, Error> {
+    let path = std::path::Path::new(path);
+
+    // If the file doesn't exist, return an error.
+    if !path.exists() {
+        return Err(Error::InvalidFilePath);
+    }
+
+    // If the file doesn't end in ".lt", return an error.
+    if !path.extension().is_some_and(|ext| ext == "lt") {
+        return Err(Error::InvalidFileExtension);
+    }
+
+    // Read the file.
+    let contents = std::fs::read_to_string(path)?;
+
+    Ok(contents)
+}

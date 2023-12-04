@@ -28,4 +28,8 @@ pub enum Error {
     ParseFloatError(#[from] std::num::ParseFloatError),
     #[error("IO error!")]
     IoError(#[from] std::io::Error),
+    #[error("Invalid file extension!")]
+    InvalidFileExtension,
+    #[error("File doesn't exist!")]
+    InvalidFilePath,
 }

@@ -1,5 +1,4 @@
 use clap::Parser;
-use std::fs::read_to_string;
 
 /// The Lithium compiler CLI.
 #[derive(Debug, Parser)]
@@ -13,7 +12,7 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let contents = match read_to_string(args.file) {
+    let contents = match lexer::read_file(&args.file) {
         Ok(contents) => contents,
         Err(why) => {
             eprintln!("Failed to read file: {why}");
