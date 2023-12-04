@@ -13,6 +13,7 @@ It is a statically typed, compiled language with a syntax very similar to Rust.
 
 - [About](#about)
 - [Compiling](#compiling)
+- [Installing](#installing)
 - [Testing](#testing)
 - [Benchmarking](#benchmarking)
 - [Usage](#usage)
