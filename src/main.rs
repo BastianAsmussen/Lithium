@@ -1,5 +1,5 @@
 use clap::Parser;
-use std::fs::{read_to_string};
+use std::fs::read_to_string;
 
 /// The Lithium compiler CLI.
 #[derive(Debug, Parser)]
@@ -31,6 +31,17 @@ fn main() {
             std::process::exit(1);
         }
     };
+    println!("Tokens: {tokens:#?}");
 
-    println!("{tokens:#?}");
+    let mut parser = parser::Parser::new(tokens);
+    let ast = match parser.parse() {
+        Ok(ast) => ast,
+        Err(why) => {
+            eprintln!("Failed to parse tokens: {why}");
+
+            std::process::exit(1);
+        }
+    };
+
+    println!("AST: {ast:#?}");
 }

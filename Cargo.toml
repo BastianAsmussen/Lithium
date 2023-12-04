@@ -14,3 +14,4 @@ edition = "2021"
 clap = { version = "4.4.10", features = ["derive"] }
 
 lexer = { path = "lexer" }
+parser = { path = "parser" }
