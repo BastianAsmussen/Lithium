@@ -7,7 +7,8 @@ It is a statically typed, compiled language with a syntax very similar to Rust.
 [![Build](https://github.com/BastianAsmussen/Lithium/actions/workflows/build.yml/badge.svg)](https://github.com/BastianAsmussen/Lithium/actions/workflows/build.yml)  
 [![Tests](https://github.com/BastianAsmussen/Lithium/actions/workflows/test.yml/badge.svg)](https://github.com/BastianAsmussen/Lithium/actions/workflows/test.yml)  
 [![Benchmarks](https://github.com/BastianAsmussen/Lithium/actions/workflows/bench.yml/badge.svg)](https://github.com/BastianAsmussen/Lithium/actions/workflows/bench.yml)  
-![License](https://img.shields.io/github/license/BastianAsmussen/Lithium)
+![License](https://img.shields.io/github/license/BastianAsmussen/Lithium)  
+![Code Size](https://img.shields.io/github/languages/code-size/BastianAsmussen/Lithium)
 
 ## Table of Contents
 
@@ -72,10 +73,6 @@ fn greet(name: str) -> str {
 
 print(greet("World"));
 ```
-
-## License
-
-Lithium is licensed under the MIT license. See the [LICENSE](LICENSE) file for more information.
 
 ## Contributing
 
