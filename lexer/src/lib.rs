@@ -491,11 +491,11 @@ impl<'a> Lexer<'a> {
             Some(c) if c.is_numeric() || c == '+' || c == '-' => {
                 // If we receive a None, then we know it's not a number, so we can read an operator.
                 let Some(token) = self.read_number()? else {
-                    return self.read_operator()
+                    return self.read_operator();
                 };
 
                 token
-            },
+            }
             Some('"') => self.read_string()?,
             None => Token::new(TokenKind::EndOfFile, self.line, self.column),
             _ => self.read_operator()?,
