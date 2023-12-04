@@ -58,7 +58,7 @@ $ cargo bench --workspace
 To compile a Lithium program, use the following command:
 
 ```bash
-$ lithium --file <input file>
+$ lithium --file </path/to/file.lt>
 ```
 
 ## Syntax
