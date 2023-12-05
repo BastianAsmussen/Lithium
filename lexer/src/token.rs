@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 /// A token kind, which is a type of token.
 ///
 /// # Variants
@@ -12,7 +14,7 @@
 /// * `Minus` - A minus sign, `-`.
 /// * `Decrement` - A decrement operator, `--`.
 /// * `SubtractAssign` - A subtract-assign operator, `-=`.
-/// * `Asterisk` - An asterisk, `*`.
+/// * `Star` - An asterisk, `*`.
 /// * `Power` - A power operator, `**`.
 /// * `MultiplyAssign` - A multiply-assign operator, `*=`.
 /// * `Slash` - A slash, `/`.
@@ -21,7 +23,7 @@
 /// * `ModuloAssign` - A modulo-assign operator, `%=`.
 /// * `Caret` - A caret, `^`.
 /// * `BitwiseXorAssign` - A bitwise-xor-assign operator, `^=`.
-/// * `Bang` - A bang, `!`.
+/// * `LogicalNot` - A logical-not operator, `!`.
 /// * `NotEqual` - A not-equal operator, `!=`.
 /// * `Assign` - An equal sign, `=`.
 /// * `Equality` - An equality operator, `==`.
@@ -66,7 +68,7 @@
 /// * `Comment` - A comment, such as `// ...` or `/* ... */`.
 /// * `EndOfFile` - An end-of-file token.
 #[derive(Debug, Clone, PartialEq)]
-pub enum TokenKind {
+pub enum Kind {
     Identifier(String),
     Integer(i64),
     Float(f64),
@@ -77,7 +79,7 @@ pub enum TokenKind {
     Minus,
     Decrement,
     SubtractAssign,
-    Asterisk,
+    Star,
     Power,
     MultiplyAssign,
     Slash,
@@ -86,7 +88,7 @@ pub enum TokenKind {
     ModuloAssign,
     BitwiseXor,
     BitwiseXorAssign,
-    Bang,
+    LogicalNot,
     NotEqual,
     Assign,
     Equality,
@@ -132,6 +134,75 @@ pub enum TokenKind {
     EndOfFile,
 }
 
+impl Display for Kind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Identifier(identifier) => write!(f, "{identifier}"),
+            Self::Integer(integer) => write!(f, "{integer}"),
+            Self::Float(float) => write!(f, "{float}"),
+            Self::String(string) => write!(f, "{string}"),
+            Self::Plus => write!(f, "+"),
+            Self::Increment => write!(f, "++"),
+            Self::AddAssign => write!(f, "+="),
+            Self::Minus => write!(f, "-"),
+            Self::Decrement => write!(f, "--"),
+            Self::SubtractAssign => write!(f, "-="),
+            Self::Star => write!(f, "*"),
+            Self::Power => write!(f, "**"),
+            Self::MultiplyAssign => write!(f, "*="),
+            Self::Slash => write!(f, "/"),
+            Self::DivisionAssign => write!(f, "/="),
+            Self::Percent => write!(f, "%"),
+            Self::ModuloAssign => write!(f, "%="),
+            Self::BitwiseXor => write!(f, "^"),
+            Self::BitwiseXorAssign => write!(f, "^="),
+            Self::LogicalNot => write!(f, "!"),
+            Self::NotEqual => write!(f, "!="),
+            Self::Assign => write!(f, "="),
+            Self::Equality => write!(f, "=="),
+            Self::LessThan => write!(f, "<"),
+            Self::BitwiseLeftShift => write!(f, "<<"),
+            Self::BitwiseLeftShiftAssign => write!(f, "<<="),
+            Self::LessThanOrEqual => write!(f, "<="),
+            Self::GreaterThan => write!(f, ">"),
+            Self::BitwiseRightShift => write!(f, ">>"),
+            Self::BitwiseRightShiftAssign => write!(f, ">>="),
+            Self::GreaterThanOrEqual => write!(f, ">="),
+            Self::BitwiseAnd => write!(f, "&"),
+            Self::LogicalAnd => write!(f, "&&"),
+            Self::BitwiseAndAssign => write!(f, "&="),
+            Self::BitwiseOr => write!(f, "|"),
+            Self::BitwiseOrAssign => write!(f, "|="),
+            Self::LogicalOr => write!(f, "||"),
+            Self::LeftParenthesis => write!(f, "("),
+            Self::RightParenthesis => write!(f, ")"),
+            Self::LeftCurlyBrace => write!(f, "{{"),
+            Self::RightCurlyBrace => write!(f, "}}"),
+            Self::LeftBracket => write!(f, "["),
+            Self::RightBracket => write!(f, "]"),
+            Self::Comma => write!(f, ","),
+            Self::Dot => write!(f, "."),
+            Self::Colon => write!(f, ":"),
+            Self::Semicolon => write!(f, ";"),
+            Self::Arrow => write!(f, "->"),
+            Self::True => write!(f, "true"),
+            Self::False => write!(f, "false"),
+            Self::If => write!(f, "if"),
+            Self::Else => write!(f, "else"),
+            Self::While => write!(f, "while"),
+            Self::For => write!(f, "for"),
+            Self::Range => write!(f, "in"),
+            Self::To => write!(f, "to"),
+            Self::Break => write!(f, "break"),
+            Self::Continue => write!(f, "continue"),
+            Self::Return => write!(f, "return"),
+            Self::Function => write!(f, "function"),
+            Self::Variable => write!(f, "variable"),
+            Self::Comment | Self::EndOfFile => Ok(()),
+        }
+    }
+}
+
 /// A token, which is a single unit of a program.
 ///
 /// # Fields
@@ -141,7 +212,7 @@ pub enum TokenKind {
 /// * `column` - The column number of the token.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
-    pub kind: TokenKind,
+    pub kind: Kind,
     pub line: usize,
     pub column: usize,
 }
@@ -159,7 +230,7 @@ impl Token {
     ///
     /// * `Token` - The new token.
     #[must_use]
-    pub const fn new(kind: TokenKind, line: usize, column: usize) -> Self {
+    pub const fn new(kind: Kind, line: usize, column: usize) -> Self {
         Self { kind, line, column }
     }
 }

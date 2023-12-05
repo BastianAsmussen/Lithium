@@ -1,4 +1,4 @@
-use lexer::token::TokenKind;
+use lexer::token::Kind;
 use lexer::Lexer;
 
 #[test]
@@ -16,15 +16,14 @@ fn test_multi_line() {
     let mut lexer = Lexer::new(input);
     let tokens = lexer.tokenize().unwrap();
 
-    let actual_token_kinds: Vec<TokenKind> =
-        tokens.iter().map(|token| token.kind.clone()).collect();
+    let actual_token_kinds: Vec<Kind> = tokens.iter().map(|token| token.kind.clone()).collect();
     let expected_token_kinds = [
-        TokenKind::Variable,
-        TokenKind::Identifier("a".into()),
-        TokenKind::Assign,
-        TokenKind::Integer(10),
-        TokenKind::Semicolon,
-        TokenKind::EndOfFile,
+        Kind::Variable,
+        Kind::Identifier("a".into()),
+        Kind::Assign,
+        Kind::Integer(10),
+        Kind::Semicolon,
+        Kind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);

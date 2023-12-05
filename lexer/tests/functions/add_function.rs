@@ -1,4 +1,4 @@
-use lexer::token::TokenKind;
+use lexer::token::Kind;
 use lexer::Lexer;
 
 #[test]
@@ -13,30 +13,29 @@ fn test_function() {
     let mut lexer = Lexer::new(input);
     let tokens = lexer.tokenize().unwrap();
 
-    let actual_token_kinds: Vec<TokenKind> =
-        tokens.iter().map(|token| token.kind.clone()).collect();
+    let actual_token_kinds: Vec<Kind> = tokens.iter().map(|token| token.kind.clone()).collect();
     let expected_token_kinds = [
-        TokenKind::Function,
-        TokenKind::Identifier("add".into()),
-        TokenKind::LeftParenthesis,
-        TokenKind::Identifier("a".into()),
-        TokenKind::Colon,
-        TokenKind::Identifier("int".into()),
-        TokenKind::Comma,
-        TokenKind::Identifier("b".into()),
-        TokenKind::Colon,
-        TokenKind::Identifier("int".into()),
-        TokenKind::RightParenthesis,
-        TokenKind::Arrow,
-        TokenKind::Identifier("int".into()),
-        TokenKind::LeftCurlyBrace,
-        TokenKind::Return,
-        TokenKind::Identifier("a".into()),
-        TokenKind::Plus,
-        TokenKind::Identifier("b".into()),
-        TokenKind::Semicolon,
-        TokenKind::RightCurlyBrace,
-        TokenKind::EndOfFile,
+        Kind::Function,
+        Kind::Identifier("add".into()),
+        Kind::LeftParenthesis,
+        Kind::Identifier("a".into()),
+        Kind::Colon,
+        Kind::Identifier("int".into()),
+        Kind::Comma,
+        Kind::Identifier("b".into()),
+        Kind::Colon,
+        Kind::Identifier("int".into()),
+        Kind::RightParenthesis,
+        Kind::Arrow,
+        Kind::Identifier("int".into()),
+        Kind::LeftCurlyBrace,
+        Kind::Return,
+        Kind::Identifier("a".into()),
+        Kind::Plus,
+        Kind::Identifier("b".into()),
+        Kind::Semicolon,
+        Kind::RightCurlyBrace,
+        Kind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);

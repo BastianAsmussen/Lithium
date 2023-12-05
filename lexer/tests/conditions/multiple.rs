@@ -1,4 +1,4 @@
-use lexer::token::TokenKind;
+use lexer::token::Kind;
 use lexer::Lexer;
 
 #[test]
@@ -18,31 +18,30 @@ fn test_multiple() {
     let mut lexer = Lexer::new(input);
     let tokens = lexer.tokenize().unwrap();
 
-    let actual_token_kinds: Vec<TokenKind> =
-        tokens.iter().map(|token| token.kind.clone()).collect();
+    let actual_token_kinds: Vec<Kind> = tokens.iter().map(|token| token.kind.clone()).collect();
     let expected_token_kinds = [
-        TokenKind::Variable,
-        TokenKind::Identifier("a".into()),
-        TokenKind::Assign,
-        TokenKind::Integer(10),
-        TokenKind::Semicolon,
-        TokenKind::If,
-        TokenKind::Identifier("a".into()),
-        TokenKind::Equality,
-        TokenKind::Integer(10),
-        TokenKind::LeftCurlyBrace,
-        TokenKind::RightCurlyBrace,
-        TokenKind::Else,
-        TokenKind::If,
-        TokenKind::Identifier("a".into()),
-        TokenKind::Equality,
-        TokenKind::Integer(20),
-        TokenKind::LeftCurlyBrace,
-        TokenKind::RightCurlyBrace,
-        TokenKind::Else,
-        TokenKind::LeftCurlyBrace,
-        TokenKind::RightCurlyBrace,
-        TokenKind::EndOfFile,
+        Kind::Variable,
+        Kind::Identifier("a".into()),
+        Kind::Assign,
+        Kind::Integer(10),
+        Kind::Semicolon,
+        Kind::If,
+        Kind::Identifier("a".into()),
+        Kind::Equality,
+        Kind::Integer(10),
+        Kind::LeftCurlyBrace,
+        Kind::RightCurlyBrace,
+        Kind::Else,
+        Kind::If,
+        Kind::Identifier("a".into()),
+        Kind::Equality,
+        Kind::Integer(20),
+        Kind::LeftCurlyBrace,
+        Kind::RightCurlyBrace,
+        Kind::Else,
+        Kind::LeftCurlyBrace,
+        Kind::RightCurlyBrace,
+        Kind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);

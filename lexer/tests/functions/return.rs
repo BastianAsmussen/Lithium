@@ -1,4 +1,4 @@
-use lexer::token::TokenKind;
+use lexer::token::Kind;
 use lexer::Lexer;
 
 #[test]
@@ -17,40 +17,39 @@ fn test_return() {
     let mut lexer = Lexer::new(input);
     let tokens = lexer.tokenize().unwrap();
 
-    let actual_token_kinds: Vec<TokenKind> =
-        tokens.iter().map(|token| token.kind.clone()).collect();
+    let actual_token_kinds: Vec<Kind> = tokens.iter().map(|token| token.kind.clone()).collect();
     let expected_token_kinds = [
-        TokenKind::Function,
-        TokenKind::Identifier("factorial".into()),
-        TokenKind::LeftParenthesis,
-        TokenKind::Identifier("n".into()),
-        TokenKind::Colon,
-        TokenKind::Identifier("int".into()),
-        TokenKind::RightParenthesis,
-        TokenKind::Arrow,
-        TokenKind::Identifier("int".into()),
-        TokenKind::LeftCurlyBrace,
-        TokenKind::If,
-        TokenKind::Identifier("n".into()),
-        TokenKind::Equality,
-        TokenKind::Integer(0),
-        TokenKind::LeftCurlyBrace,
-        TokenKind::Return,
-        TokenKind::Integer(1),
-        TokenKind::Semicolon,
-        TokenKind::RightCurlyBrace,
-        TokenKind::Return,
-        TokenKind::Identifier("n".into()),
-        TokenKind::Asterisk,
-        TokenKind::Identifier("factorial".into()),
-        TokenKind::LeftParenthesis,
-        TokenKind::Identifier("n".into()),
-        TokenKind::Minus,
-        TokenKind::Integer(1),
-        TokenKind::RightParenthesis,
-        TokenKind::Semicolon,
-        TokenKind::RightCurlyBrace,
-        TokenKind::EndOfFile,
+        Kind::Function,
+        Kind::Identifier("factorial".into()),
+        Kind::LeftParenthesis,
+        Kind::Identifier("n".into()),
+        Kind::Colon,
+        Kind::Identifier("int".into()),
+        Kind::RightParenthesis,
+        Kind::Arrow,
+        Kind::Identifier("int".into()),
+        Kind::LeftCurlyBrace,
+        Kind::If,
+        Kind::Identifier("n".into()),
+        Kind::Equality,
+        Kind::Integer(0),
+        Kind::LeftCurlyBrace,
+        Kind::Return,
+        Kind::Integer(1),
+        Kind::Semicolon,
+        Kind::RightCurlyBrace,
+        Kind::Return,
+        Kind::Identifier("n".into()),
+        Kind::Star,
+        Kind::Identifier("factorial".into()),
+        Kind::LeftParenthesis,
+        Kind::Identifier("n".into()),
+        Kind::Minus,
+        Kind::Integer(1),
+        Kind::RightParenthesis,
+        Kind::Semicolon,
+        Kind::RightCurlyBrace,
+        Kind::EndOfFile,
     ];
 
     assert_eq!(actual_token_kinds, expected_token_kinds);
