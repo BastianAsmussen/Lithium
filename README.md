@@ -21,7 +21,7 @@ It is a statically typed, compiled language with a syntax very similar to Rust.
 
 ## Compiling
 
-To compile the compiler, we use Cargo (get it [here](https://rustup.rs/)).
+To compile the Lithium compiler, we use Cargo (get it [here](https://rustup.rs/)).
 
 ```bash
 $ cargo build --release --workspace
