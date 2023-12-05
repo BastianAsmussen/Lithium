@@ -17,10 +17,3 @@ jobs:
         run: cargo build --release --workspace
       - name: Testing...
         run: cargo test --release --workspace
-      - name: Benchmarking...
-        run: cargo bench --release --workspace
-      - name: Saving results...
-        uses: actions/upload-artifact@v2
-        with:
-          name: benchmark-results
-          path: target/criterion
