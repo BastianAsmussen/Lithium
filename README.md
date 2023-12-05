@@ -4,11 +4,9 @@ This is a simple programming language written in Rust for learning purposes.
 It is a statically typed, compiled language with a syntax very similar to Rust.
 
 ## Statistics
-[![Build](https://github.com/BastianAsmussen/Lithium/actions/workflows/build.yml/badge.svg)](https://github.com/BastianAsmussen/Lithium/actions/workflows/build.yml)  
-[![Tests](https://github.com/BastianAsmussen/Lithium/actions/workflows/test.yml/badge.svg)](https://github.com/BastianAsmussen/Lithium/actions/workflows/test.yml)  
-[![Benchmarks](https://github.com/BastianAsmussen/Lithium/actions/workflows/bench.yml/badge.svg)](https://github.com/BastianAsmussen/Lithium/actions/workflows/bench.yml)  
+[![Build and Test](https://github.com/BastianAsmussen/Lithium/actions/workflows/build.yml/badge.svg)](https://github.com/BastianAsmussen/Lithium/actions/workflows/build.yml)  
+![Code Size](https://img.shields.io/github/languages/code-size/BastianAsmussen/Lithium)  
 ![License](https://img.shields.io/github/license/BastianAsmussen/Lithium)  
-![Code Size](https://img.shields.io/github/languages/code-size/BastianAsmussen/Lithium)
 
 ## Table of Contents
 
