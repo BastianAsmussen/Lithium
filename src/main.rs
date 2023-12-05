@@ -12,7 +12,7 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let contents = match lexer::read_file(&args.file) {
+    let contents = match lang::lexer::read_file(&args.file) {
         Ok(contents) => contents,
         Err(why) => {
             eprintln!("Failed to read file: {why}");
@@ -21,7 +21,7 @@ fn main() {
         }
     };
 
-    let mut lexer = lexer::Lexer::new(&contents);
+    let mut lexer = lang::lexer::Lexer::new(&contents);
     let (result, elapsed) = {
         let start = std::time::Instant::now();
 
@@ -39,7 +39,7 @@ fn main() {
     println!("Tokens: {tokens:#?}");
     println!("Lexing took {elapsed:#?}.");
 
-    let mut parser = parser::Parser::new(tokens);
+    let mut parser = lang::parser::Parser::new(tokens);
     let (result, elapsed) = {
         let start = std::time::Instant::now();
 

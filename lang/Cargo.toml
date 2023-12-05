@@ -1,0 +1,27 @@
+[package]
+name = "lang"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+lexer = []
+parser = ["lexer"]
+default = ["lexer", "parser"]
+
+[dependencies]
+thiserror = "1.0.50"
+
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+
+[[bench]]
+name = "lex_hello_world"
+required-features = ["lexer"]
+path = "benches/lexer/lex_hello_world.rs"
+harness = false
+
+[[bench]]
+name = "lex_large_file"
+required-features = ["lexer"]
+path = "benches/lexer/lex_large_file.rs"
+harness = false
