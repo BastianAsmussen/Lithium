@@ -22,7 +22,12 @@ fn main() {
     };
 
     let mut lexer = lexer::Lexer::new(&contents);
-    let tokens = match lexer.tokenize() {
+    let (result, elapsed) = {
+        let start = std::time::Instant::now();
+
+        (lexer.tokenize(), start.elapsed())
+    };
+    let tokens = match result {
         Ok(tokens) => tokens,
         Err(why) => {
             eprintln!("Failed to tokenize input: {why}");
@@ -30,17 +35,25 @@ fn main() {
             std::process::exit(1);
         }
     };
+
     println!("Tokens: {tokens:#?}");
+    println!("Lexing took {elapsed:#?}.");
 
     let mut parser = parser::Parser::new(tokens);
-    let ast = match parser.parse() {
-        Ok(ast) => ast,
+    let (result, elapsed) = {
+        let start = std::time::Instant::now();
+
+        (parser.parse(), start.elapsed())
+    };
+    let ast = match result {
+        Ok(statements) => statements,
         Err(why) => {
-            eprintln!("Failed to parse tokens: {why}");
+            eprintln!("Failed to parse input: {why}");
 
             std::process::exit(1);
         }
     };
 
     println!("AST: {ast:#?}");
+    println!("Parsing took {elapsed:#?}.");
 }
