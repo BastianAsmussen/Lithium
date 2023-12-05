@@ -1,4 +1,4 @@
-name: Build
+name: Build and Test
 on:
   push:
     branches: [ "main" ]
@@ -15,3 +15,12 @@ jobs:
       - uses: actions/checkout@v3
       - name: Building...
         run: cargo build --release --workspace
+      - name: Testing...
+        run: cargo test --release --workspace
+      - name: Benchmarking...
+        run: cargo bench --release --workspace
+      - name: Saving results...
+        uses: actions/upload-artifact@v2
+        with:
+          name: benchmark-results
+          path: target/criterion
