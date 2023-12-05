@@ -1,8 +1,10 @@
 use crate::errors::Error;
-use crate::token::{Token, TokenKind};
+use crate::token::{Kind, Token};
 
 pub mod errors;
 pub mod token;
+
+static ALLOWED_NUMBER_CHARS: &[char] = &['+', '-', 'e', 'E', '.', 'b', 'B', 'o', 'O', 'x', 'X'];
 
 /// A lexer.
 ///
@@ -71,24 +73,24 @@ impl<'a> Lexer<'a> {
             identifier.push(c);
         }
 
-        let token_type = match identifier.as_str() {
-            "true" => TokenKind::True,
-            "false" => TokenKind::False,
-            "if" => TokenKind::If,
-            "else" => TokenKind::Else,
-            "while" => TokenKind::While,
-            "for" => TokenKind::For,
-            "in" => TokenKind::Range, // "in" is a keyword because it's used in "for" loops.
-            "to" => TokenKind::To,    // "to" is a keyword because it's used in "for" loops.
-            "break" => TokenKind::Break,
-            "continue" => TokenKind::Continue,
-            "return" => TokenKind::Return,
-            "fn" => TokenKind::Function,
-            "let" => TokenKind::Variable,
-            _ => TokenKind::Identifier(identifier),
+        let token_kind = match identifier.as_str() {
+            "true" => Kind::True,
+            "false" => Kind::False,
+            "if" => Kind::If,
+            "else" => Kind::Else,
+            "while" => Kind::While,
+            "for" => Kind::For,
+            "in" => Kind::Range, // "in" is a keyword because it's used in "for" loops.
+            "to" => Kind::To,    // "to" is a keyword because it's used in "for" loops.
+            "break" => Kind::Break,
+            "continue" => Kind::Continue,
+            "return" => Kind::Return,
+            "fn" => Kind::Function,
+            "let" => Kind::Variable,
+            _ => Kind::Identifier(identifier),
         };
 
-        Token::new(token_type, self.line, self.column)
+        Token::new(token_kind, self.line, self.column)
     }
 
     fn read_number(&mut self) -> Result<Option<Token>, Error> {
@@ -105,10 +107,8 @@ impl<'a> Lexer<'a> {
         }
 
         let mut number = String::new();
-        // We allow scientific notation, floating point notation, binary, octal, and hexadecimal numbers.
-        let allowed_chars = ['+', '-', 'e', 'E', '.', 'b', 'B', 'o', 'O', 'x', 'X'];
         while let Some(c) = self.current_char() {
-            if !c.is_numeric() && !allowed_chars.contains(&c) {
+            if !c.is_numeric() && !ALLOWED_NUMBER_CHARS.contains(&c) {
                 break;
             }
 
@@ -117,6 +117,7 @@ impl<'a> Lexer<'a> {
             number.push(c);
         }
 
+        // Make sure the number isn't empty.
         let number = number.trim();
         if number.is_empty() {
             return Err(Error::UnexpectedCharacter {
@@ -126,40 +127,40 @@ impl<'a> Lexer<'a> {
             });
         }
 
-        let token_type = if number.contains('.') || number.contains('e') || number.contains('E') {
+        let token_kind = if number.contains('.') || number.contains('e') || number.contains('E') {
             let number = number.parse::<f64>()?;
 
-            TokenKind::Float(number)
+            Kind::Float(number)
         } else if number.contains('b') || number.contains('B') {
             let number = i64::from_str_radix(&number[2..], 2)?;
 
-            TokenKind::Integer(number)
+            Kind::Integer(number)
         } else if number.contains('o') || number.contains('O') {
             let number = i64::from_str_radix(&number[2..], 8)?;
 
-            TokenKind::Integer(number)
+            Kind::Integer(number)
         } else if number.contains('x') || number.contains('X') {
             let number = i64::from_str_radix(&number[2..], 16)?;
 
-            TokenKind::Integer(number)
+            Kind::Integer(number)
         } else {
             let number = number.parse::<i64>()?;
 
-            TokenKind::Integer(number)
+            Kind::Integer(number)
         };
 
         // If the number is negative, then we need to negate it.
-        let token_type = if is_negative {
-            match token_type {
-                TokenKind::Integer(number) => TokenKind::Integer(-number),
-                TokenKind::Float(number) => TokenKind::Float(-number),
+        let token_kind = if is_negative {
+            match token_kind {
+                Kind::Integer(number) => Kind::Integer(-number),
+                Kind::Float(number) => Kind::Float(-number),
                 _ => unreachable!(),
             }
         } else {
-            token_type
+            token_kind
         };
 
-        Ok(Some(Token::new(token_type, self.line, self.column)))
+        Ok(Some(Token::new(token_kind, self.line, self.column)))
     }
 
     fn read_string(&mut self) -> Result<Token, Error> {
@@ -200,11 +201,7 @@ impl<'a> Lexer<'a> {
             if c == '"' {
                 self.advance();
 
-                return Ok(Token::new(
-                    TokenKind::String(string),
-                    self.line,
-                    self.column,
-                ));
+                return Ok(Token::new(Kind::String(string), self.line, self.column));
             }
 
             string.push(c);
@@ -217,65 +214,65 @@ impl<'a> Lexer<'a> {
         })
     }
 
-    fn handle_plus(&mut self) -> TokenKind {
+    fn handle_plus(&mut self) -> Kind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                TokenKind::AddAssign
+                Kind::AddAssign
             }
             Some('+') => {
                 self.advance();
 
-                TokenKind::Increment
+                Kind::Increment
             }
-            _ => TokenKind::Plus,
+            _ => Kind::Plus,
         }
     }
 
-    fn handle_minus(&mut self) -> TokenKind {
+    fn handle_minus(&mut self) -> Kind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                TokenKind::SubtractAssign
+                Kind::SubtractAssign
             }
             Some('-') => {
                 self.advance();
 
-                TokenKind::Decrement
+                Kind::Decrement
             }
             Some('>') => {
                 self.advance();
 
-                TokenKind::Arrow
+                Kind::Arrow
             }
-            _ => TokenKind::Minus,
+            _ => Kind::Minus,
         }
     }
 
-    fn handle_asterisk(&mut self) -> TokenKind {
+    fn handle_asterisk(&mut self) -> Kind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                TokenKind::MultiplyAssign
+                Kind::MultiplyAssign
             }
             Some('*') => {
                 self.advance();
 
-                TokenKind::Power
+                Kind::Power
             }
-            _ => TokenKind::Asterisk,
+            _ => Kind::Star,
         }
     }
 
-    fn handle_slash(&mut self) -> TokenKind {
+    fn handle_slash(&mut self) -> Kind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                TokenKind::DivisionAssign
+                Kind::DivisionAssign
             }
             Some('/') => {
                 // Single-line comment, ignore until a new-line.
@@ -287,7 +284,7 @@ impl<'a> Lexer<'a> {
                     self.advance();
                 }
 
-                TokenKind::Comment
+                Kind::Comment
             }
             Some('*') => {
                 self.advance();
@@ -303,62 +300,62 @@ impl<'a> Lexer<'a> {
                 self.advance();
                 self.advance();
 
-                TokenKind::Comment
+                Kind::Comment
             }
-            _ => TokenKind::Slash,
+            _ => Kind::Slash,
         }
     }
 
-    fn handle_percent(&mut self) -> TokenKind {
+    fn handle_percent(&mut self) -> Kind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                TokenKind::ModuloAssign
+                Kind::ModuloAssign
             }
-            _ => TokenKind::Percent,
+            _ => Kind::Percent,
         }
     }
 
-    fn handle_caret(&mut self) -> TokenKind {
+    fn handle_caret(&mut self) -> Kind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                TokenKind::BitwiseXorAssign
+                Kind::BitwiseXorAssign
             }
-            _ => TokenKind::BitwiseXor,
+            _ => Kind::BitwiseXor,
         }
     }
 
-    fn handle_bang(&mut self) -> TokenKind {
+    fn handle_bang(&mut self) -> Kind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                TokenKind::NotEqual
+                Kind::NotEqual
             }
-            _ => TokenKind::Bang,
+            _ => Kind::LogicalNot,
         }
     }
 
-    fn handle_equal(&mut self) -> TokenKind {
+    fn handle_equal(&mut self) -> Kind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                TokenKind::Equality
+                Kind::Equality
             }
-            _ => TokenKind::Assign,
+            _ => Kind::Assign,
         }
     }
 
-    fn handle_less_than(&mut self) -> TokenKind {
+    fn handle_less_than(&mut self) -> Kind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                TokenKind::LessThanOrEqual
+                Kind::LessThanOrEqual
             }
             Some('<') => {
                 self.advance();
@@ -366,21 +363,21 @@ impl<'a> Lexer<'a> {
                 if self.next_char() == Some('=') {
                     self.advance();
 
-                    TokenKind::BitwiseLeftShiftAssign
+                    Kind::BitwiseLeftShiftAssign
                 } else {
-                    TokenKind::BitwiseLeftShift
+                    Kind::BitwiseLeftShift
                 }
             }
-            _ => TokenKind::LessThan,
+            _ => Kind::LessThan,
         }
     }
 
-    fn handle_greater_than(&mut self) -> TokenKind {
+    fn handle_greater_than(&mut self) -> Kind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                TokenKind::GreaterThanOrEqual
+                Kind::GreaterThanOrEqual
             }
             Some('>') => {
                 self.advance();
@@ -388,44 +385,44 @@ impl<'a> Lexer<'a> {
                 if self.next_char() == Some('=') {
                     self.advance();
 
-                    TokenKind::BitwiseRightShiftAssign
+                    Kind::BitwiseRightShiftAssign
                 } else {
-                    TokenKind::BitwiseRightShift
+                    Kind::BitwiseRightShift
                 }
             }
-            _ => TokenKind::GreaterThan,
+            _ => Kind::GreaterThan,
         }
     }
 
-    fn handle_ampersand(&mut self) -> TokenKind {
+    fn handle_ampersand(&mut self) -> Kind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                TokenKind::BitwiseAndAssign
+                Kind::BitwiseAndAssign
             }
             Some('&') => {
                 self.advance();
 
-                TokenKind::LogicalAnd
+                Kind::LogicalAnd
             }
-            _ => TokenKind::BitwiseAnd,
+            _ => Kind::BitwiseAnd,
         }
     }
 
-    fn handle_pipe(&mut self) -> TokenKind {
+    fn handle_pipe(&mut self) -> Kind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                TokenKind::BitwiseOrAssign
+                Kind::BitwiseOrAssign
             }
             Some('|') => {
                 self.advance();
 
-                TokenKind::LogicalOr
+                Kind::LogicalOr
             }
-            _ => TokenKind::BitwiseOr,
+            _ => Kind::BitwiseOr,
         }
     }
 
@@ -444,16 +441,16 @@ impl<'a> Lexer<'a> {
             Some('>') => self.handle_greater_than(),
             Some('&') => self.handle_ampersand(),
             Some('|') => self.handle_pipe(),
-            Some('(') => TokenKind::LeftParenthesis,
-            Some(')') => TokenKind::RightParenthesis,
-            Some('{') => TokenKind::LeftCurlyBrace,
-            Some('}') => TokenKind::RightCurlyBrace,
-            Some('[') => TokenKind::LeftBracket,
-            Some(']') => TokenKind::RightBracket,
-            Some(',') => TokenKind::Comma,
-            Some('.') => TokenKind::Dot,
-            Some(':') => TokenKind::Colon,
-            Some(';') => TokenKind::Semicolon,
+            Some('(') => Kind::LeftParenthesis,
+            Some(')') => Kind::RightParenthesis,
+            Some('{') => Kind::LeftCurlyBrace,
+            Some('}') => Kind::RightCurlyBrace,
+            Some('[') => Kind::LeftBracket,
+            Some(']') => Kind::RightBracket,
+            Some(',') => Kind::Comma,
+            Some('.') => Kind::Dot,
+            Some(':') => Kind::Colon,
+            Some(';') => Kind::Semicolon,
             _ => {
                 return Err(Error::UnexpectedCharacter {
                     char: current_char,
@@ -497,7 +494,7 @@ impl<'a> Lexer<'a> {
                 token
             }
             Some('"') => self.read_string()?,
-            None => Token::new(TokenKind::EndOfFile, self.line, self.column),
+            None => Token::new(Kind::EndOfFile, self.line, self.column),
             _ => self.read_operator()?,
         };
 
@@ -524,7 +521,7 @@ impl<'a> Lexer<'a> {
         let mut tokens = Vec::new();
         while !self.is_at_end() {
             let token = self.read_token()?;
-            if token.kind == TokenKind::Comment {
+            if token.kind == Kind::Comment {
                 continue;
             }
 
@@ -533,8 +530,8 @@ impl<'a> Lexer<'a> {
 
         // Make sure the last token is an EOF token.
         if let Some(token) = tokens.last() {
-            if token.kind != TokenKind::EndOfFile {
-                tokens.push(Token::new(TokenKind::EndOfFile, self.line, self.column));
+            if token.kind != Kind::EndOfFile {
+                tokens.push(Token::new(Kind::EndOfFile, self.line, self.column));
             }
         }
 
