@@ -68,7 +68,7 @@ use std::fmt::{Display, Formatter};
 /// * `Comment` - A comment, such as `// ...` or `/* ... */`.
 /// * `EndOfFile` - An end-of-file token.
 #[derive(Debug, Clone, PartialEq)]
-pub enum Kind {
+pub enum TokenKind {
     Identifier(String),
     Integer(i64),
     Float(f64),
@@ -134,7 +134,7 @@ pub enum Kind {
     EndOfFile,
 }
 
-impl Display for Kind {
+impl Display for TokenKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Identifier(identifier) => write!(f, "{identifier}"),
@@ -207,14 +207,14 @@ impl Display for Kind {
 ///
 /// # Fields
 ///
-/// * `kind` - The kind of token.
 /// * `line` - The line number of the token.
 /// * `column` - The column number of the token.
+/// * `token_kind` - The kind of token.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
-    pub kind: Kind,
     pub line: usize,
     pub column: usize,
+    pub token_kind: TokenKind,
 }
 
 impl Token {
@@ -230,7 +230,11 @@ impl Token {
     ///
     /// * `Token` - The new token.
     #[must_use]
-    pub const fn new(kind: Kind, line: usize, column: usize) -> Self {
-        Self { kind, line, column }
+    pub const fn new(kind: TokenKind, line: usize, column: usize) -> Self {
+        Self {
+            token_kind: kind,
+            line,
+            column,
+        }
     }
 }
