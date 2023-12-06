@@ -10,7 +10,7 @@ use thiserror::Error;
 /// * `InvalidAssignmentTarget` - An invalid assignment target was encountered.
 /// * `ParseFloat` - Failed to parse a float.
 /// * `UnexpectedEndOfFile` - Unexpected end of file.
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Eq, PartialEq)]
 pub enum Error {
     #[error("Unexpected token at line {line} and column {column}: {message}")]
     UnexpectedToken {
