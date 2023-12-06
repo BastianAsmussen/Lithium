@@ -1,4 +1,5 @@
-use lang::lexer::{token::Kind, token::Token, Lexer};
+use lang::lexer::{tokens::Token, tokens::TokenKind, Lexer};
+use lang::parser::ast::AST;
 use lang::parser::{Expression, Literal, Parser, Statement};
 
 #[test]
@@ -15,33 +16,33 @@ fn test_greet() {
     let mut lexer = Lexer::new(input);
     let tokens = lexer.tokenize().unwrap();
 
-    let mut parser = Parser::new(tokens);
+    let mut parser = Parser::new(&tokens);
     let actual_ast = parser.parse().unwrap();
-    let expected_ast = vec![
+    let expected_ast = AST::new(vec![
         Statement::Function {
-            name: Token::new(Kind::Identifier("greet".into()), 1, 8),
+            name: Token::new(TokenKind::Identifier("greet".into()), 1, 8),
             parameters: vec![(
-                Token::new(Kind::Identifier("name".into()), 1, 13),
-                Token::new(Kind::Identifier("str".into()), 1, 18),
+                Token::new(TokenKind::Identifier("name".into()), 1, 13),
+                Token::new(TokenKind::Identifier("str".into()), 1, 18),
             )],
             return_type: None,
             body: Box::from(Statement::Block {
                 statements: vec![Statement::Expression {
                     expression: Expression::Call {
                         callee: Box::from(Expression::Variable {
-                            name: Token::new(Kind::Identifier("print".into()), 2, 18),
+                            name: Token::new(TokenKind::Identifier("print".into()), 2, 18),
                         }),
                         arguments: vec![Expression::Binary {
                             left: Box::from(Expression::Binary {
                                 left: Box::from(Expression::Literal(Literal::String(
                                     "Hello, ".into(),
                                 ))),
-                                operator: Token::new(Kind::Plus, 2, 29),
+                                operator: Token::new(TokenKind::Plus, 2, 29),
                                 right: Box::from(Expression::Variable {
-                                    name: Token::new(Kind::Identifier("name".into()), 2, 35),
+                                    name: Token::new(TokenKind::Identifier("name".into()), 2, 35),
                                 }),
                             }),
-                            operator: Token::new(Kind::Plus, 2, 36),
+                            operator: Token::new(TokenKind::Plus, 2, 36),
                             right: Box::from(Expression::Literal(Literal::String("!".into()))),
                         }],
                     },
@@ -51,12 +52,12 @@ fn test_greet() {
         Statement::Expression {
             expression: Expression::Call {
                 callee: Box::from(Expression::Variable {
-                    name: Token::new(Kind::Identifier("greet".into()), 5, 14),
+                    name: Token::new(TokenKind::Identifier("greet".into()), 5, 14),
                 }),
                 arguments: vec![Expression::Literal(Literal::String("World".into()))],
             },
         },
-    ];
+    ]);
 
     assert_eq!(actual_ast, expected_ast);
 }

@@ -1,4 +1,5 @@
 use lang::lexer::Lexer;
+use lang::parser::errors::Error;
 use lang::parser::Parser;
 
 #[test]
@@ -11,10 +12,17 @@ fn test_no_semicolon() {
     let mut lexer = Lexer::new(input);
     let tokens = lexer.tokenize().unwrap();
 
-    let mut parser = Parser::new(tokens);
+    let mut parser = Parser::new(&tokens);
     let ast = parser.parse();
 
-    assert!(ast.is_err());
+    assert_eq!(
+        ast,
+        Err(Error::UnexpectedToken {
+            line: 1,
+            column: 9,
+            message: "Expected ';' after variable declaration.".into(),
+        })
+    );
 }
 
 #[test]
@@ -27,10 +35,17 @@ fn test_no_expression() {
     let mut lexer = Lexer::new(input);
     let tokens = lexer.tokenize().unwrap();
 
-    let mut parser = Parser::new(tokens);
+    let mut parser = Parser::new(&tokens);
     let ast = parser.parse();
 
-    assert!(ast.is_err());
+    assert_eq!(
+        ast,
+        Err(Error::UnexpectedToken {
+            line: 1,
+            column: 8,
+            message: "Expected expression.".into(),
+        })
+    );
 }
 
 #[test]
@@ -43,8 +58,15 @@ fn test_no_name() {
     let mut lexer = Lexer::new(input);
     let tokens = lexer.tokenize().unwrap();
 
-    let mut parser = Parser::new(tokens);
+    let mut parser = Parser::new(&tokens);
     let ast = parser.parse();
 
-    assert!(ast.is_err());
+    assert_eq!(
+        ast,
+        Err(Error::UnexpectedToken {
+            line: 1,
+            column: 4,
+            message: "Expected variable name.".into(),
+        })
+    );
 }
