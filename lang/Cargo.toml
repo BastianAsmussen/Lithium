@@ -6,7 +6,8 @@ edition = "2021"
 [features]
 lexer = []
 parser = ["lexer"]
-default = ["lexer", "parser"]
+semantics = ["parser"]
+default = ["lexer", "parser", "semantics"]
 
 [dependencies]
 thiserror = "1.0.50"
