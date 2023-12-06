@@ -70,14 +70,17 @@ impl<'a> Semantics<'a> {
 
     fn visit_statement(&mut self, statement: &'a Statement) -> Result<(), Error> {
         match statement {
-            Statement::Expression { expression} => self.visit_expression(expression),
+            Statement::Expression { expression } => self.visit_expression(expression),
             Statement::Variable { name, initializer } => {
                 if let Some(initializer) = initializer {
                     self.visit_expression(initializer)?;
                 }
 
-                self.get_current_symbol_table()?.add_symbol(Symbol::new(&name.token_kind.to_string(), SymbolKind::Variable))
-            },
+                self.get_current_symbol_table()?.add_symbol(Symbol::new(
+                    &name.token_kind.to_string(),
+                    SymbolKind::Variable,
+                ))
+            }
             Statement::Block { statements } => {
                 self.update_current_scope();
 
@@ -88,8 +91,12 @@ impl<'a> Semantics<'a> {
                 self.revert_current_scope();
 
                 Ok(())
-            },
-            Statement::If { condition, then_branch, else_branch } => {
+            }
+            Statement::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 self.visit_expression(condition)?;
                 self.visit_statement(then_branch)?;
 
@@ -98,14 +105,19 @@ impl<'a> Semantics<'a> {
                 }
 
                 Ok(())
-            },
+            }
             Statement::While { condition, body } => {
                 self.visit_expression(condition)?;
                 self.visit_statement(body)?;
 
                 Ok(())
-            },
-            Statement::For { initializer, condition, increment, body } => {
+            }
+            Statement::For {
+                initializer,
+                condition,
+                increment,
+                body,
+            } => {
                 if let Some(initializer) = initializer {
                     self.visit_statement(initializer)?;
                 }
@@ -121,28 +133,48 @@ impl<'a> Semantics<'a> {
                 self.visit_statement(body)?;
 
                 Ok(())
-            },
+            }
             Statement::Return { keyword, value } => {
-                self.get_current_symbol_table()?.add_symbol(Symbol::new(&keyword.token_kind.to_string(), SymbolKind::BuiltIn))?;
+                self.get_current_symbol_table()?.add_symbol(Symbol::new(
+                    &keyword.token_kind.to_string(),
+                    SymbolKind::BuiltIn,
+                ))?;
 
                 if let Some(value) = value {
                     self.visit_expression(value)?;
                 }
 
                 Ok(())
-            },
-            Statement::Function { name, parameters, return_type, body } => {
-                self.get_current_symbol_table()?.add_symbol(Symbol::new(&name.token_kind.to_string(), SymbolKind::Function))?;
+            }
+            Statement::Function {
+                name,
+                parameters,
+                return_type,
+                body,
+            } => {
+                self.get_current_symbol_table()?.add_symbol(Symbol::new(
+                    &name.token_kind.to_string(),
+                    SymbolKind::Function,
+                ))?;
 
                 self.update_current_scope();
 
                 for (name, kind) in parameters {
-                    self.get_current_symbol_table()?.add_symbol(Symbol::new(&name.token_kind.to_string(), SymbolKind::Variable))?;
-                    self.get_current_symbol_table()?.add_symbol(Symbol::new(&kind.token_kind.to_string(), SymbolKind::BuiltIn))?;
+                    self.get_current_symbol_table()?.add_symbol(Symbol::new(
+                        &name.token_kind.to_string(),
+                        SymbolKind::Variable,
+                    ))?;
+                    self.get_current_symbol_table()?.add_symbol(Symbol::new(
+                        &kind.token_kind.to_string(),
+                        SymbolKind::BuiltIn,
+                    ))?;
                 }
 
                 if let Some(return_type) = return_type {
-                    self.get_current_symbol_table()?.add_symbol(Symbol::new(&return_type.token_kind.to_string(), SymbolKind::BuiltIn))?;
+                    self.get_current_symbol_table()?.add_symbol(Symbol::new(
+                        &return_type.token_kind.to_string(),
+                        SymbolKind::BuiltIn,
+                    ))?;
                 }
 
                 self.visit_statement(body)?;
@@ -150,7 +182,7 @@ impl<'a> Semantics<'a> {
                 self.revert_current_scope();
 
                 Ok(())
-            },
+            }
             _ => Ok(()),
         }
     }
@@ -159,12 +191,22 @@ impl<'a> Semantics<'a> {
         match expression {
             Expression::Literal(literal) => self.visit_literal(literal),
             Expression::Unary { operator, right } => {
-                self.get_current_symbol_table()?.add_symbol(Symbol::new(&operator.token_kind.to_string(), SymbolKind::BuiltIn))?;
+                self.get_current_symbol_table()?.add_symbol(Symbol::new(
+                    &operator.token_kind.to_string(),
+                    SymbolKind::BuiltIn,
+                ))?;
 
                 self.visit_expression(right)
             }
-            Expression::Binary { left, operator, right } => {
-                self.get_current_symbol_table()?.add_symbol(Symbol::new(&operator.token_kind.to_string(), SymbolKind::BuiltIn))?;
+            Expression::Binary {
+                left,
+                operator,
+                right,
+            } => {
+                self.get_current_symbol_table()?.add_symbol(Symbol::new(
+                    &operator.token_kind.to_string(),
+                    SymbolKind::BuiltIn,
+                ))?;
 
                 self.visit_expression(left)?;
                 self.visit_expression(right)
@@ -173,10 +215,14 @@ impl<'a> Semantics<'a> {
             Expression::Assignment { name, value } => {
                 self.visit_expression(value)?;
 
-                self.get_current_symbol_table()?.add_symbol(Symbol::new(&name.token_kind.to_string(), SymbolKind::Variable))
+                self.get_current_symbol_table()?.add_symbol(Symbol::new(
+                    &name.token_kind.to_string(),
+                    SymbolKind::Variable,
+                ))
             }
             Expression::Variable { name } => {
-                self.get_current_symbol_table()?.get_symbol(&name.token_kind.to_string())?;
+                self.get_current_symbol_table()?
+                    .get_symbol(&name.token_kind.to_string())?;
 
                 Ok(())
             }
