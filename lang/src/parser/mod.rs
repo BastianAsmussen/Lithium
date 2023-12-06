@@ -1,19 +1,21 @@
+pub mod ast;
 pub mod errors;
 
-use crate::lexer::token::{Kind, Token};
+use crate::lexer::tokens::{Token, TokenKind};
+use crate::parser::ast::AST;
 use errors::Error;
 
 /// A literal expression.
 ///
 /// # Variants
 ///
-/// * `Number` - A number literal.
 /// * `String` - A string literal.
+/// * `Number` - A number literal.
 /// * `Boolean` - A boolean literal.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
-    Number(f64),
     String(String),
+    Number(f64),
     Boolean(bool),
 }
 
@@ -25,7 +27,10 @@ pub enum Literal {
 /// * `Unary` - A unary expression.
 /// * `Binary` - A binary expression.
 /// * `Grouping` - A grouping expression.
-#[derive(Debug, PartialEq)]
+/// * `Assignment` - An assignment expression.
+/// * `Variable` - A variable expression.
+/// * `Call` - A call expression.
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Literal(Literal),
     Unary {
@@ -51,11 +56,6 @@ pub enum Expression {
         callee: Box<Expression>,
         arguments: Vec<Expression>,
     },
-    Function {
-        name: Token,
-        parameters: Vec<Token>,
-        body: Box<Statement>,
-    },
 }
 
 /// A statement.
@@ -72,7 +72,7 @@ pub enum Expression {
 /// * `Continue` - A continue statement.
 /// * `Return` - A return statement.
 /// * `Function` - A function statement.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression {
         expression: Expression,
@@ -120,12 +120,12 @@ pub enum Statement {
 /// * `tokens` - The tokens to parse.
 /// * `current` - The index of the current token.
 #[derive(Debug)]
-pub struct Parser {
-    tokens: Vec<Token>,
+pub struct Parser<'a> {
+    tokens: &'a [Token],
     current: usize,
 }
 
-impl Parser {
+impl<'a> Parser<'a> {
     /// Creates a new parser.
     ///
     /// # Arguments
@@ -136,7 +136,7 @@ impl Parser {
     ///
     /// * The new parser.
     #[must_use]
-    pub fn new(tokens: Vec<Token>) -> Self {
+    pub const fn new(tokens: &'a [Token]) -> Self {
         Self { tokens, current: 0 }
     }
 
@@ -144,26 +144,26 @@ impl Parser {
     ///
     /// # Returns
     ///
-    /// * `Result<Vec<Statement>, Error>` - The parsed statements, or an error.
+    /// * `Result<AST, Error>` - The generated AST, or an error.
     ///
     /// # Errors
     ///
     /// * `Error::UnexpectedToken` - The parser encountered an unexpected token.
     /// * `Error::InvalidAssignmentTarget` - The parser encountered an invalid assignment target.
-    pub fn parse(&mut self) -> Result<Vec<Statement>, Error> {
+    pub fn parse(&mut self) -> Result<AST, Error> {
         let mut statements = Vec::new();
 
         while !self.is_at_end() {
             statements.push(self.declaration()?);
         }
 
-        Ok(statements)
+        Ok(AST::new(statements))
     }
 
     fn declaration(&mut self) -> Result<Statement, Error> {
-        if self.matches(&[Kind::Variable]) {
+        if self.matches(&[TokenKind::Variable]) {
             self.variable_declaration()
-        } else if self.matches(&[Kind::Function]) {
+        } else if self.matches(&[TokenKind::Function]) {
             self.function_declaration()
         } else {
             self.statement()
@@ -171,8 +171,8 @@ impl Parser {
     }
 
     fn variable_declaration(&mut self) -> Result<Statement, Error> {
-        let name = match self.peek().kind {
-            Kind::Identifier(_) => self.advance(),
+        let name = match self.peek().token_kind {
+            TokenKind::Identifier(_) => self.advance(),
             _ => {
                 return Err(Error::UnexpectedToken {
                     line: self.peek().line,
@@ -182,20 +182,23 @@ impl Parser {
             }
         };
 
-        let initializer = if self.matches(&[Kind::Assign]) {
+        let initializer = if self.matches(&[TokenKind::Assign]) {
             Some(self.expression()?)
         } else {
             None
         };
 
-        self.consume(&Kind::Semicolon, "Expected ';' after variable declaration.")?;
+        self.consume(
+            &TokenKind::Semicolon,
+            "Expected ';' after variable declaration.",
+        )?;
 
         Ok(Statement::Variable { name, initializer })
     }
 
     fn function_declaration(&mut self) -> Result<Statement, Error> {
-        let name = match self.peek().kind {
-            Kind::Identifier(_) => self.advance(),
+        let name = match self.peek().token_kind {
+            TokenKind::Identifier(_) => self.advance(),
             _ => {
                 return Err(Error::UnexpectedToken {
                     line: self.peek().line,
@@ -204,13 +207,16 @@ impl Parser {
                 })
             }
         };
-        self.consume(&Kind::LeftParenthesis, "Expected '(' after function name.")?;
+        self.consume(
+            &TokenKind::LeftParenthesis,
+            "Expected '(' after function name.",
+        )?;
 
         let mut parameters = Vec::new();
-        if !self.check(&Kind::RightParenthesis) {
+        if !self.check(&TokenKind::RightParenthesis) {
             loop {
-                let name = match self.peek().kind {
-                    Kind::Identifier(_) => self.advance(),
+                let name = match self.peek().token_kind {
+                    TokenKind::Identifier(_) => self.advance(),
                     _ => {
                         return Err(Error::UnexpectedToken {
                             line: self.peek().line,
@@ -219,9 +225,9 @@ impl Parser {
                         })
                     }
                 };
-                self.consume(&Kind::Colon, "Expected ':' after parameter name.")?;
-                let r#type = match self.peek().kind {
-                    Kind::Identifier(_) => self.advance(),
+                self.consume(&TokenKind::Colon, "Expected ':' after parameter name.")?;
+                let r#type = match self.peek().token_kind {
+                    TokenKind::Identifier(_) => self.advance(),
                     _ => {
                         return Err(Error::UnexpectedToken {
                             line: self.peek().line,
@@ -233,18 +239,21 @@ impl Parser {
 
                 parameters.push((name, r#type));
 
-                if !self.matches(&[Kind::Comma]) {
+                if !self.matches(&[TokenKind::Comma]) {
                     break;
                 }
             }
         }
 
-        self.consume(&Kind::RightParenthesis, "Expected ')' after parameters.")?;
+        self.consume(
+            &TokenKind::RightParenthesis,
+            "Expected ')' after parameters.",
+        )?;
 
         // Return type, if any.
-        let return_type = if self.matches(&[Kind::Arrow]) {
-            Some(match self.peek().kind {
-                Kind::Identifier(_) => self.advance(),
+        let return_type = if self.matches(&[TokenKind::Arrow]) {
+            Some(match self.peek().token_kind {
+                TokenKind::Identifier(_) => self.advance(),
                 _ => {
                     return Err(Error::UnexpectedToken {
                         line: self.peek().line,
@@ -257,7 +266,10 @@ impl Parser {
             None
         };
 
-        self.consume(&Kind::LeftCurlyBrace, "Expected '{' before function body.")?;
+        self.consume(
+            &TokenKind::LeftCurlyBrace,
+            "Expected '{' before function body.",
+        )?;
 
         let body = self.block()?;
 
@@ -270,19 +282,19 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Statement, Error> {
-        if self.matches(&[Kind::LeftCurlyBrace]) {
+        if self.matches(&[TokenKind::LeftCurlyBrace]) {
             self.block()
-        } else if self.matches(&[Kind::If]) {
+        } else if self.matches(&[TokenKind::If]) {
             self.if_statement()
-        } else if self.matches(&[Kind::While]) {
+        } else if self.matches(&[TokenKind::While]) {
             self.while_statement()
-        } else if self.matches(&[Kind::For]) {
+        } else if self.matches(&[TokenKind::For]) {
             self.for_statement()
-        } else if self.matches(&[Kind::Break]) {
+        } else if self.matches(&[TokenKind::Break]) {
             self.break_statement()
-        } else if self.matches(&[Kind::Continue]) {
+        } else if self.matches(&[TokenKind::Continue]) {
             self.continue_statement()
-        } else if self.matches(&[Kind::Return]) {
+        } else if self.matches(&[TokenKind::Return]) {
             self.return_statement()
         } else {
             self.expression_statement()
@@ -292,24 +304,27 @@ impl Parser {
     fn block(&mut self) -> Result<Statement, Error> {
         let mut statements = Vec::new();
 
-        while !self.check(&Kind::RightCurlyBrace) && !self.is_at_end() {
+        while !self.check(&TokenKind::RightCurlyBrace) && !self.is_at_end() {
             statements.push(self.declaration()?);
         }
 
-        self.consume(&Kind::RightCurlyBrace, "Expected '}' after block.")?;
+        self.consume(&TokenKind::RightCurlyBrace, "Expected '}' after block.")?;
 
         Ok(Statement::Block { statements })
     }
 
     fn if_statement(&mut self) -> Result<Statement, Error> {
-        self.consume(&Kind::LeftParenthesis, "Expected '(' after 'if'.")?;
+        self.consume(&TokenKind::LeftParenthesis, "Expected '(' after 'if'.")?;
 
         let condition = self.expression()?;
 
-        self.consume(&Kind::RightParenthesis, "Expected ')' after if condition.")?;
+        self.consume(
+            &TokenKind::RightParenthesis,
+            "Expected ')' after if condition.",
+        )?;
 
         let then_branch = Box::new(self.statement()?);
-        let else_branch = if self.matches(&[Kind::Else]) {
+        let else_branch = if self.matches(&[TokenKind::Else]) {
             Some(Box::new(self.statement()?))
         } else {
             None
@@ -323,12 +338,12 @@ impl Parser {
     }
 
     fn while_statement(&mut self) -> Result<Statement, Error> {
-        self.consume(&Kind::LeftParenthesis, "Expected '(' after 'while'.")?;
+        self.consume(&TokenKind::LeftParenthesis, "Expected '(' after 'while'.")?;
 
         let condition = self.expression()?;
 
         self.consume(
-            &Kind::RightParenthesis,
+            &TokenKind::RightParenthesis,
             "Expected ')' after while condition.",
         )?;
 
@@ -338,31 +353,34 @@ impl Parser {
     }
 
     fn for_statement(&mut self) -> Result<Statement, Error> {
-        self.consume(&Kind::LeftParenthesis, "Expected '(' after 'for'.")?;
+        self.consume(&TokenKind::LeftParenthesis, "Expected '(' after 'for'.")?;
 
-        let initializer = if self.matches(&[Kind::Semicolon]) {
+        let initializer = if self.matches(&[TokenKind::Semicolon]) {
             None
-        } else if self.matches(&[Kind::Variable]) {
+        } else if self.matches(&[TokenKind::Variable]) {
             Some(Box::new(self.variable_declaration()?))
         } else {
             Some(Box::new(self.expression_statement()?))
         };
 
-        let condition = if self.check(&Kind::Semicolon) {
+        let condition = if self.check(&TokenKind::Semicolon) {
             None
         } else {
             Some(self.expression()?)
         };
 
-        self.consume(&Kind::Semicolon, "Expected ';' after loop condition.")?;
+        self.consume(&TokenKind::Semicolon, "Expected ';' after loop condition.")?;
 
-        let increment = if self.check(&Kind::RightParenthesis) {
+        let increment = if self.check(&TokenKind::RightParenthesis) {
             None
         } else {
             Some(self.expression()?)
         };
 
-        self.consume(&Kind::RightParenthesis, "Expected ')' after for clauses.")?;
+        self.consume(
+            &TokenKind::RightParenthesis,
+            "Expected ')' after for clauses.",
+        )?;
 
         let body = Box::new(self.statement()?);
 
@@ -375,13 +393,13 @@ impl Parser {
     }
 
     fn break_statement(&mut self) -> Result<Statement, Error> {
-        self.consume(&Kind::Semicolon, "Expected ';' after 'break'.")?;
+        self.consume(&TokenKind::Semicolon, "Expected ';' after 'break'.")?;
 
         Ok(Statement::Break)
     }
 
     fn continue_statement(&mut self) -> Result<Statement, Error> {
-        self.consume(&Kind::Semicolon, "Expected ';' after 'continue'.")?;
+        self.consume(&TokenKind::Semicolon, "Expected ';' after 'continue'.")?;
 
         Ok(Statement::Continue)
     }
@@ -389,13 +407,13 @@ impl Parser {
     fn return_statement(&mut self) -> Result<Statement, Error> {
         let keyword = self.previous().clone();
 
-        let value = if self.check(&Kind::Semicolon) {
+        let value = if self.check(&TokenKind::Semicolon) {
             None
         } else {
             Some(self.expression()?)
         };
 
-        self.consume(&Kind::Semicolon, "Expected ';' after return value.")?;
+        self.consume(&TokenKind::Semicolon, "Expected ';' after return value.")?;
 
         Ok(Statement::Return { keyword, value })
     }
@@ -403,7 +421,7 @@ impl Parser {
     fn expression_statement(&mut self) -> Result<Statement, Error> {
         let expression = self.expression()?;
 
-        self.consume(&Kind::Semicolon, "Expected ';' after expression.")?;
+        self.consume(&TokenKind::Semicolon, "Expected ';' after expression.")?;
 
         Ok(Statement::Expression { expression })
     }
@@ -415,7 +433,7 @@ impl Parser {
     fn assignment(&mut self) -> Result<Expression, Error> {
         let expression = self.or()?;
 
-        if self.matches(&[Kind::Assign]) {
+        if self.matches(&[TokenKind::Assign]) {
             let equals = self.previous().clone();
             let value = self.assignment()?;
 
@@ -438,7 +456,7 @@ impl Parser {
     fn or(&mut self) -> Result<Expression, Error> {
         let mut expression = self.and()?;
 
-        while self.matches(&[Kind::LogicalOr]) {
+        while self.matches(&[TokenKind::LogicalOr]) {
             let operator = self.previous().clone();
             let right = self.and()?;
 
@@ -455,7 +473,7 @@ impl Parser {
     fn and(&mut self) -> Result<Expression, Error> {
         let mut expression = self.equality()?;
 
-        while self.matches(&[Kind::LogicalAnd]) {
+        while self.matches(&[TokenKind::LogicalAnd]) {
             let operator = self.previous().clone();
             let right = self.equality()?;
 
@@ -472,7 +490,7 @@ impl Parser {
     fn equality(&mut self) -> Result<Expression, Error> {
         let mut expression = self.comparison()?;
 
-        while self.matches(&[Kind::Equality, Kind::NotEqual]) {
+        while self.matches(&[TokenKind::Equality, TokenKind::NotEqual]) {
             let operator = self.previous().clone();
             let right = self.comparison()?;
 
@@ -490,10 +508,10 @@ impl Parser {
         let mut expression = self.term()?;
 
         while self.matches(&[
-            Kind::LessThan,
-            Kind::LessThanOrEqual,
-            Kind::GreaterThan,
-            Kind::GreaterThanOrEqual,
+            TokenKind::LessThan,
+            TokenKind::LessThanOrEqual,
+            TokenKind::GreaterThan,
+            TokenKind::GreaterThanOrEqual,
         ]) {
             let operator = self.previous().clone();
             let right = self.term()?;
@@ -511,7 +529,7 @@ impl Parser {
     fn term(&mut self) -> Result<Expression, Error> {
         let mut expression = self.factor()?;
 
-        while self.matches(&[Kind::Plus, Kind::Minus]) {
+        while self.matches(&[TokenKind::Plus, TokenKind::Minus]) {
             let operator = self.previous().clone();
             let right = self.factor()?;
 
@@ -528,7 +546,7 @@ impl Parser {
     fn factor(&mut self) -> Result<Expression, Error> {
         let mut expression = self.unary()?;
 
-        while self.matches(&[Kind::Star, Kind::Slash, Kind::Percent]) {
+        while self.matches(&[TokenKind::Star, TokenKind::Slash, TokenKind::Percent]) {
             let operator = self.previous().clone();
             let right = self.unary()?;
 
@@ -543,7 +561,7 @@ impl Parser {
     }
 
     fn unary(&mut self) -> Result<Expression, Error> {
-        if self.matches(&[Kind::Minus, Kind::LogicalNot]) {
+        if self.matches(&[TokenKind::Minus, TokenKind::LogicalNot]) {
             let operator = self.previous().clone();
             let right = self.unary()?;
 
@@ -560,7 +578,7 @@ impl Parser {
         let mut expression = self.primary()?;
 
         loop {
-            if self.matches(&[Kind::LeftParenthesis]) {
+            if self.matches(&[TokenKind::LeftParenthesis]) {
                 expression = self.finish_call(expression)?;
             } else {
                 break;
@@ -573,17 +591,20 @@ impl Parser {
     fn finish_call(&mut self, callee: Expression) -> Result<Expression, Error> {
         let mut arguments = Vec::new();
 
-        if !self.check(&Kind::RightParenthesis) {
+        if !self.check(&TokenKind::RightParenthesis) {
             loop {
                 arguments.push(self.expression()?);
 
-                if !self.matches(&[Kind::Comma]) {
+                if !self.matches(&[TokenKind::Comma]) {
                     break;
                 }
             }
         }
 
-        self.consume(&Kind::RightParenthesis, "Expected ')' after arguments.")?;
+        self.consume(
+            &TokenKind::RightParenthesis,
+            "Expected ')' after arguments.",
+        )?;
 
         Ok(Expression::Call {
             callee: Box::new(callee),
@@ -594,45 +615,48 @@ impl Parser {
     #[allow(clippy::cast_precision_loss)]
     fn primary(&mut self) -> Result<Expression, Error> {
         let next = self.peek().clone();
-        match next.kind {
-            Kind::False => {
+        match next.token_kind {
+            TokenKind::False => {
                 self.advance();
 
                 Ok(Expression::Literal(Literal::Boolean(false)))
             }
-            Kind::True => {
+            TokenKind::True => {
                 self.advance();
 
                 Ok(Expression::Literal(Literal::Boolean(true)))
             }
-            Kind::Float(value) => {
+            TokenKind::Float(value) => {
                 self.advance();
 
                 Ok(Expression::Literal(Literal::Number(value)))
             }
-            Kind::Integer(value) => {
+            TokenKind::Integer(value) => {
                 self.advance();
 
                 Ok(Expression::Literal(Literal::Number(value as f64)))
             }
-            Kind::String(value) => {
+            TokenKind::String(value) => {
                 self.advance();
 
                 Ok(Expression::Literal(Literal::String(value)))
             }
-            Kind::Identifier(_) => {
+            TokenKind::Identifier(_) => {
                 self.advance();
 
                 Ok(Expression::Variable {
                     name: self.previous().clone(),
                 })
             }
-            Kind::LeftParenthesis => {
+            TokenKind::LeftParenthesis => {
                 self.advance();
 
                 let expression = self.expression()?;
 
-                self.consume(&Kind::RightParenthesis, "Expected ')' after expression.")?;
+                self.consume(
+                    &TokenKind::RightParenthesis,
+                    "Expected ')' after expression.",
+                )?;
 
                 Ok(Expression::Grouping {
                     expression: Box::new(expression),
@@ -646,7 +670,7 @@ impl Parser {
         }
     }
 
-    fn consume(&mut self, kind: &Kind, message: &str) -> Result<Token, Error> {
+    fn consume(&mut self, kind: &TokenKind, message: &str) -> Result<Token, Error> {
         if self.check(kind) {
             return Ok(self.advance());
         }
@@ -658,7 +682,7 @@ impl Parser {
         })
     }
 
-    fn matches(&mut self, kinds: &[Kind]) -> bool {
+    fn matches(&mut self, kinds: &[TokenKind]) -> bool {
         for kind in kinds {
             if self.check(kind) {
                 self.advance();
@@ -670,12 +694,12 @@ impl Parser {
         false
     }
 
-    fn check(&self, kind: &Kind) -> bool {
+    fn check(&self, kind: &TokenKind) -> bool {
         if self.is_at_end() {
             return false;
         }
 
-        self.peek().kind == *kind
+        self.peek().token_kind == *kind
     }
 
     fn advance(&mut self) -> Token {
@@ -687,14 +711,14 @@ impl Parser {
     }
 
     fn is_at_end(&self) -> bool {
-        self.peek().kind == Kind::EndOfFile
+        self.peek().token_kind == TokenKind::EndOfFile
     }
 
-    fn peek(&self) -> &Token {
+    const fn peek(&self) -> &Token {
         &self.tokens[self.current]
     }
 
-    fn previous(&self) -> &Token {
+    const fn previous(&self) -> &Token {
         &self.tokens[self.current - 1]
     }
 }
