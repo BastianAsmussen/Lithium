@@ -1,8 +1,8 @@
-use crate::lexer::token::{Kind, Token};
+use crate::lexer::tokens::{Token, TokenKind};
 use errors::Error;
 
 pub mod errors;
-pub mod token;
+pub mod tokens;
 
 static ALLOWED_NUMBER_CHARS: &[char] = &['+', '-', 'e', 'E', '.', 'b', 'B', 'o', 'O', 'x', 'X'];
 
@@ -74,20 +74,20 @@ impl<'a> Lexer<'a> {
         }
 
         let token_kind = match identifier.as_str() {
-            "true" => Kind::True,
-            "false" => Kind::False,
-            "if" => Kind::If,
-            "else" => Kind::Else,
-            "while" => Kind::While,
-            "for" => Kind::For,
-            "in" => Kind::Range, // "in" is a keyword because it's used in "for" loops.
-            "to" => Kind::To,    // "to" is a keyword because it's used in "for" loops.
-            "break" => Kind::Break,
-            "continue" => Kind::Continue,
-            "return" => Kind::Return,
-            "fn" => Kind::Function,
-            "let" => Kind::Variable,
-            _ => Kind::Identifier(identifier),
+            "true" => TokenKind::True,
+            "false" => TokenKind::False,
+            "if" => TokenKind::If,
+            "else" => TokenKind::Else,
+            "while" => TokenKind::While,
+            "for" => TokenKind::For,
+            "in" => TokenKind::Range, // "in" is a keyword because it's used in "for" loops.
+            "to" => TokenKind::To,    // "to" is a keyword because it's used in "for" loops.
+            "break" => TokenKind::Break,
+            "continue" => TokenKind::Continue,
+            "return" => TokenKind::Return,
+            "fn" => TokenKind::Function,
+            "let" => TokenKind::Variable,
+            _ => TokenKind::Identifier(identifier),
         };
 
         Token::new(token_kind, self.line, self.column)
@@ -130,30 +130,30 @@ impl<'a> Lexer<'a> {
         let token_kind = if number.contains('.') || number.contains('e') || number.contains('E') {
             let number = number.parse::<f64>()?;
 
-            Kind::Float(number)
+            TokenKind::Float(number)
         } else if number.contains('b') || number.contains('B') {
             let number = i64::from_str_radix(&number[2..], 2)?;
 
-            Kind::Integer(number)
+            TokenKind::Integer(number)
         } else if number.contains('o') || number.contains('O') {
             let number = i64::from_str_radix(&number[2..], 8)?;
 
-            Kind::Integer(number)
+            TokenKind::Integer(number)
         } else if number.contains('x') || number.contains('X') {
             let number = i64::from_str_radix(&number[2..], 16)?;
 
-            Kind::Integer(number)
+            TokenKind::Integer(number)
         } else {
             let number = number.parse::<i64>()?;
 
-            Kind::Integer(number)
+            TokenKind::Integer(number)
         };
 
         // If the number is negative, then we need to negate it.
         let token_kind = if is_negative {
             match token_kind {
-                Kind::Integer(number) => Kind::Integer(-number),
-                Kind::Float(number) => Kind::Float(-number),
+                TokenKind::Integer(number) => TokenKind::Integer(-number),
+                TokenKind::Float(number) => TokenKind::Float(-number),
                 _ => unreachable!(),
             }
         } else {
@@ -201,7 +201,11 @@ impl<'a> Lexer<'a> {
             if c == '"' {
                 self.advance();
 
-                return Ok(Token::new(Kind::String(string), self.line, self.column));
+                return Ok(Token::new(
+                    TokenKind::String(string),
+                    self.line,
+                    self.column,
+                ));
             }
 
             string.push(c);
@@ -214,65 +218,65 @@ impl<'a> Lexer<'a> {
         })
     }
 
-    fn handle_plus(&mut self) -> Kind {
+    fn handle_plus(&mut self) -> TokenKind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                Kind::AddAssign
+                TokenKind::AddAssign
             }
             Some('+') => {
                 self.advance();
 
-                Kind::Increment
+                TokenKind::Increment
             }
-            _ => Kind::Plus,
+            _ => TokenKind::Plus,
         }
     }
 
-    fn handle_minus(&mut self) -> Kind {
+    fn handle_minus(&mut self) -> TokenKind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                Kind::SubtractAssign
+                TokenKind::SubtractAssign
             }
             Some('-') => {
                 self.advance();
 
-                Kind::Decrement
+                TokenKind::Decrement
             }
             Some('>') => {
                 self.advance();
 
-                Kind::Arrow
+                TokenKind::Arrow
             }
-            _ => Kind::Minus,
+            _ => TokenKind::Minus,
         }
     }
 
-    fn handle_asterisk(&mut self) -> Kind {
+    fn handle_asterisk(&mut self) -> TokenKind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                Kind::MultiplyAssign
+                TokenKind::MultiplyAssign
             }
             Some('*') => {
                 self.advance();
 
-                Kind::Power
+                TokenKind::Power
             }
-            _ => Kind::Star,
+            _ => TokenKind::Star,
         }
     }
 
-    fn handle_slash(&mut self) -> Kind {
+    fn handle_slash(&mut self) -> TokenKind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                Kind::DivisionAssign
+                TokenKind::DivisionAssign
             }
             Some('/') => {
                 // Single-line comment, ignore until a new-line.
@@ -284,7 +288,7 @@ impl<'a> Lexer<'a> {
                     self.advance();
                 }
 
-                Kind::Comment
+                TokenKind::Comment
             }
             Some('*') => {
                 self.advance();
@@ -300,62 +304,62 @@ impl<'a> Lexer<'a> {
                 self.advance();
                 self.advance();
 
-                Kind::Comment
+                TokenKind::Comment
             }
-            _ => Kind::Slash,
+            _ => TokenKind::Slash,
         }
     }
 
-    fn handle_percent(&mut self) -> Kind {
+    fn handle_percent(&mut self) -> TokenKind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                Kind::ModuloAssign
+                TokenKind::ModuloAssign
             }
-            _ => Kind::Percent,
+            _ => TokenKind::Percent,
         }
     }
 
-    fn handle_caret(&mut self) -> Kind {
+    fn handle_caret(&mut self) -> TokenKind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                Kind::BitwiseXorAssign
+                TokenKind::BitwiseXorAssign
             }
-            _ => Kind::BitwiseXor,
+            _ => TokenKind::BitwiseXor,
         }
     }
 
-    fn handle_bang(&mut self) -> Kind {
+    fn handle_bang(&mut self) -> TokenKind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                Kind::NotEqual
+                TokenKind::NotEqual
             }
-            _ => Kind::LogicalNot,
+            _ => TokenKind::LogicalNot,
         }
     }
 
-    fn handle_equal(&mut self) -> Kind {
+    fn handle_equal(&mut self) -> TokenKind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                Kind::Equality
+                TokenKind::Equality
             }
-            _ => Kind::Assign,
+            _ => TokenKind::Assign,
         }
     }
 
-    fn handle_less_than(&mut self) -> Kind {
+    fn handle_less_than(&mut self) -> TokenKind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                Kind::LessThanOrEqual
+                TokenKind::LessThanOrEqual
             }
             Some('<') => {
                 self.advance();
@@ -363,21 +367,21 @@ impl<'a> Lexer<'a> {
                 if self.next_char() == Some('=') {
                     self.advance();
 
-                    Kind::BitwiseLeftShiftAssign
+                    TokenKind::BitwiseLeftShiftAssign
                 } else {
-                    Kind::BitwiseLeftShift
+                    TokenKind::BitwiseLeftShift
                 }
             }
-            _ => Kind::LessThan,
+            _ => TokenKind::LessThan,
         }
     }
 
-    fn handle_greater_than(&mut self) -> Kind {
+    fn handle_greater_than(&mut self) -> TokenKind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                Kind::GreaterThanOrEqual
+                TokenKind::GreaterThanOrEqual
             }
             Some('>') => {
                 self.advance();
@@ -385,44 +389,44 @@ impl<'a> Lexer<'a> {
                 if self.next_char() == Some('=') {
                     self.advance();
 
-                    Kind::BitwiseRightShiftAssign
+                    TokenKind::BitwiseRightShiftAssign
                 } else {
-                    Kind::BitwiseRightShift
+                    TokenKind::BitwiseRightShift
                 }
             }
-            _ => Kind::GreaterThan,
+            _ => TokenKind::GreaterThan,
         }
     }
 
-    fn handle_ampersand(&mut self) -> Kind {
+    fn handle_ampersand(&mut self) -> TokenKind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                Kind::BitwiseAndAssign
+                TokenKind::BitwiseAndAssign
             }
             Some('&') => {
                 self.advance();
 
-                Kind::LogicalAnd
+                TokenKind::LogicalAnd
             }
-            _ => Kind::BitwiseAnd,
+            _ => TokenKind::BitwiseAnd,
         }
     }
 
-    fn handle_pipe(&mut self) -> Kind {
+    fn handle_pipe(&mut self) -> TokenKind {
         match self.next_char() {
             Some('=') => {
                 self.advance();
 
-                Kind::BitwiseOrAssign
+                TokenKind::BitwiseOrAssign
             }
             Some('|') => {
                 self.advance();
 
-                Kind::LogicalOr
+                TokenKind::LogicalOr
             }
-            _ => Kind::BitwiseOr,
+            _ => TokenKind::BitwiseOr,
         }
     }
 
@@ -441,16 +445,16 @@ impl<'a> Lexer<'a> {
             Some('>') => self.handle_greater_than(),
             Some('&') => self.handle_ampersand(),
             Some('|') => self.handle_pipe(),
-            Some('(') => Kind::LeftParenthesis,
-            Some(')') => Kind::RightParenthesis,
-            Some('{') => Kind::LeftCurlyBrace,
-            Some('}') => Kind::RightCurlyBrace,
-            Some('[') => Kind::LeftBracket,
-            Some(']') => Kind::RightBracket,
-            Some(',') => Kind::Comma,
-            Some('.') => Kind::Dot,
-            Some(':') => Kind::Colon,
-            Some(';') => Kind::Semicolon,
+            Some('(') => TokenKind::LeftParenthesis,
+            Some(')') => TokenKind::RightParenthesis,
+            Some('{') => TokenKind::LeftCurlyBrace,
+            Some('}') => TokenKind::RightCurlyBrace,
+            Some('[') => TokenKind::LeftBracket,
+            Some(']') => TokenKind::RightBracket,
+            Some(',') => TokenKind::Comma,
+            Some('.') => TokenKind::Dot,
+            Some(':') => TokenKind::Colon,
+            Some(';') => TokenKind::Semicolon,
             _ => {
                 return Err(Error::UnexpectedCharacter {
                     char: current_char,
@@ -494,7 +498,7 @@ impl<'a> Lexer<'a> {
                 token
             }
             Some('"') => self.read_string()?,
-            None => Token::new(Kind::EndOfFile, self.line, self.column),
+            None => Token::new(TokenKind::EndOfFile, self.line, self.column),
             _ => self.read_operator()?,
         };
 
@@ -521,7 +525,7 @@ impl<'a> Lexer<'a> {
         let mut tokens = Vec::new();
         while !self.is_at_end() {
             let token = self.read_token()?;
-            if token.kind == Kind::Comment {
+            if token.token_kind == TokenKind::Comment {
                 continue;
             }
 
@@ -530,8 +534,8 @@ impl<'a> Lexer<'a> {
 
         // Make sure the last token is an EOF token.
         if let Some(token) = tokens.last() {
-            if token.kind != Kind::EndOfFile {
-                tokens.push(Token::new(Kind::EndOfFile, self.line, self.column));
+            if token.token_kind != TokenKind::EndOfFile {
+                tokens.push(Token::new(TokenKind::EndOfFile, self.line, self.column));
             }
         }
 
