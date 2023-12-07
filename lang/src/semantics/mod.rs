@@ -1,55 +1,92 @@
+use crate::lexer::tokens::{Token, TokenKind};
 use crate::parser::ast::AST;
-use crate::parser::{Expression, Literal, Statement};
+use crate::parser::{Expression, Statement};
 use crate::semantics::errors::Error;
-use crate::semantics::symbols::{Scope, Symbol, SymbolKind, SymbolTable};
-use std::collections::HashMap;
+use crate::semantics::scopes::Scope;
+use crate::semantics::symbols::SymbolKind;
 
 pub mod errors;
+pub mod scopes;
 pub mod symbols;
 
-/// The semantic analyzer.
+pub trait Visitor {
+    /// Visits a statement.
+    ///
+    /// # Arguments
+    ///
+    /// * `statement` - The statement to visit.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<(), Error>` - The result of the visit.
+    ///
+    /// # Errors
+    ///
+    /// * If the scope is invalid.
+    /// * If the symbol is undefined.
+    /// * If the symbol is already defined.
+    fn visit_statement(&mut self, statement: &Statement) -> Result<(), Error>;
+
+    /// Visits an expression.
+    ///
+    /// # Arguments
+    ///
+    /// * `expression` - The expression to visit.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<(), Error>` - The result of the visit.
+    ///
+    /// # Errors
+    ///
+    /// * If the scope is invalid.
+    /// * If the symbol is undefined.
+    /// * If the symbol is already defined.
+    fn visit_expression(&mut self, expression: &Expression) -> Result<(), Error>;
+}
+
+/// A semantic analyzer which analyzes the AST.
 ///
 /// # Fields
 ///
-/// * `ast` - The abstract syntax tree of the program.
-///
-/// * `scopes` - The current scope.
-/// * `current_scope` - The current scope.
+/// * `ast` - The AST to analyze.
+/// * `scopes` - The scopes found.
 #[derive(Debug)]
-pub struct Semantics<'a> {
+pub struct SemanticAnalyzer<'a> {
     ast: &'a AST,
-
-    scopes: HashMap<Scope, SymbolTable>,
-    current_scope: Scope,
+    scopes: Vec<Scope>,
 }
 
-impl<'a> Semantics<'a> {
+impl<'a> SemanticAnalyzer<'a> {
     /// Creates a new semantic analyzer.
     ///
     /// # Arguments
     ///
-    /// * `ast` - The abstract syntax tree of the program.
+    /// * `ast` - The AST to analyze.
     ///
     /// # Returns
     ///
-    /// * The new semantic analyzer.
+    /// * `SemanticAnalyzer` - The new semantic analyzer.
     #[must_use]
     pub fn new(ast: &'a AST) -> Self {
         Self {
             ast,
-
-            scopes: std::iter::once(&(Scope::Root, SymbolTable::default()))
-                .cloned()
-                .collect(),
-            current_scope: Scope::Root,
+            scopes: vec![Scope::default()],
         }
     }
+    fn current_scope(&mut self) -> Result<&mut Scope, Error> {
+        self.scopes.last_mut().ok_or(Error::InvalidScope)
+    }
 
-    /// Analyzes the program.
-    ///
-    /// # Arguments
-    ///
-    /// * `self` - The semantic analyzer.
+    fn begin_scope(&mut self) {
+        self.scopes.push(Scope::default());
+    }
+
+    fn end_scope(&mut self) {
+        self.scopes.pop();
+    }
+
+    /// Analyzes the AST.
     ///
     /// # Returns
     ///
@@ -57,9 +94,7 @@ impl<'a> Semantics<'a> {
     ///
     /// # Errors
     ///
-    /// * `ScopeNotDefined` - The scope is not defined.
-    /// * `SymbolNotDefined` - The symbol is not defined.
-    /// * `SymbolAlreadyDefined` - The symbol is already defined.
+    /// * If the scope is invalid.
     pub fn analyze(&mut self) -> Result<(), Error> {
         for statement in &self.ast.statements {
             self.visit_statement(statement)?;
@@ -68,27 +103,47 @@ impl<'a> Semantics<'a> {
         Ok(())
     }
 
-    fn visit_statement(&mut self, statement: &'a Statement) -> Result<(), Error> {
+    fn get_symbol(&mut self, token: &Token) -> Result<&mut SymbolKind, Error> {
+        let name = token.token_kind.to_string();
+
+        for scope in self.scopes.iter_mut().rev() {
+            if let Some(symbol) = scope.symbol_table.get_mut(&*name) {
+                return Ok(symbol);
+            }
+        }
+
+        Err(Error::UndefinedSymbol {
+            name,
+            line: token.line,
+            column: token.column,
+        })
+    }
+}
+
+impl<'a> Visitor for SemanticAnalyzer<'a> {
+    #[allow(clippy::expect_used)]
+    fn visit_statement(&mut self, statement: &Statement) -> Result<(), Error> {
         match statement {
             Statement::Expression { expression } => self.visit_expression(expression),
             Statement::Variable { name, initializer } => {
-                if let Some(initializer) = initializer {
-                    self.visit_expression(initializer)?;
+                let is_initialized = initializer.is_some();
+                if is_initialized {
+                    self.visit_expression(initializer.as_ref().expect("Initializer is None!"))?;
                 }
 
-                self.get_current_symbol_table()?.add_symbol(Symbol::new(
+                self.current_scope()?.define(
                     &name.token_kind.to_string(),
-                    SymbolKind::Variable,
-                ))
+                    SymbolKind::Variable { is_initialized },
+                );
+
+                Ok(())
             }
             Statement::Block { statements } => {
-                self.update_current_scope();
-
+                self.begin_scope();
                 for statement in statements {
                     self.visit_statement(statement)?;
                 }
-
-                self.revert_current_scope();
+                self.end_scope();
 
                 Ok(())
             }
@@ -121,28 +176,13 @@ impl<'a> Semantics<'a> {
                 if let Some(initializer) = initializer {
                     self.visit_statement(initializer)?;
                 }
-
                 if let Some(condition) = condition {
                     self.visit_expression(condition)?;
                 }
-
                 if let Some(increment) = increment {
                     self.visit_expression(increment)?;
                 }
-
                 self.visit_statement(body)?;
-
-                Ok(())
-            }
-            Statement::Return { keyword, value } => {
-                self.get_current_symbol_table()?.add_symbol(Symbol::new(
-                    &keyword.token_kind.to_string(),
-                    SymbolKind::BuiltIn,
-                ))?;
-
-                if let Some(value) = value {
-                    self.visit_expression(value)?;
-                }
 
                 Ok(())
             }
@@ -152,79 +192,122 @@ impl<'a> Semantics<'a> {
                 return_type,
                 body,
             } => {
-                self.get_current_symbol_table()?.add_symbol(Symbol::new(
+                self.current_scope()?.define(
                     &name.token_kind.to_string(),
-                    SymbolKind::Function,
-                ))?;
+                    SymbolKind::Function {
+                        return_type: return_type.as_ref().cloned(),
+                    },
+                );
 
-                self.update_current_scope();
+                self.begin_scope();
 
+                // Define the parameters.
                 for (name, kind) in parameters {
-                    self.get_current_symbol_table()?.add_symbol(Symbol::new(
+                    if !matches!(kind.token_kind, TokenKind::Identifier(_)) {
+                        return Err(Error::InvalidParameterKind {
+                            name: name.token_kind.to_string(),
+                            line: name.line,
+                            column: name.column,
+                        });
+                    }
+
+                    self.current_scope()?.define(
                         &name.token_kind.to_string(),
-                        SymbolKind::Variable,
-                    ))?;
-                    self.get_current_symbol_table()?.add_symbol(Symbol::new(
-                        &kind.token_kind.to_string(),
-                        SymbolKind::BuiltIn,
-                    ))?;
+                        SymbolKind::Variable { is_initialized: true },
+                    );
                 }
 
-                if let Some(return_type) = return_type {
-                    self.get_current_symbol_table()?.add_symbol(Symbol::new(
-                        &return_type.token_kind.to_string(),
-                        SymbolKind::BuiltIn,
-                    ))?;
-                }
-
+                // Examine the body.
                 self.visit_statement(body)?;
-
-                self.revert_current_scope();
+                
+                self.end_scope();
 
                 Ok(())
             }
-            _ => Ok(()),
+            Statement::Return { value, .. } => {
+                if let Some(value) = value {
+                    self.visit_expression(value)?;
+                }
+
+                Ok(())
+            }
+            Statement::Break | Statement::Continue => Ok(()),
         }
     }
 
-    fn visit_expression(&mut self, expression: &'a Expression) -> Result<(), Error> {
+    fn visit_expression(&mut self, expression: &Expression) -> Result<(), Error> {
         match expression {
-            Expression::Literal(literal) => self.visit_literal(literal),
-            Expression::Unary { operator, right } => {
-                self.get_current_symbol_table()?.add_symbol(Symbol::new(
-                    &operator.token_kind.to_string(),
-                    SymbolKind::BuiltIn,
-                ))?;
+            Expression::Literal(_) => {}
+            Expression::Variable { name } => {
+                // If the variable is not defined, this will return an error.
+                let symbol = self.get_symbol(name)?;
 
-                self.visit_expression(right)
+                // If the variable is not initialized, this will return an error.
+                if let SymbolKind::Variable { is_initialized } = &symbol {
+                    if !is_initialized {
+                        return Err(Error::UninitializedVariable {
+                            name: name.token_kind.to_string(),
+                            line: name.line,
+                            column: name.column,
+                        });
+                    }
+                }
+            }
+            Expression::Assignment { name, value } => {
+                self.visit_expression(value)?;
+
+                // If the variable is not defined, this will return an error.
+                let symbol = self.get_symbol(name)?;
+
+                if matches!(symbol, SymbolKind::Function { .. }) {
+                    return Err(Error::InvalidAssignment {
+                        name: name.token_kind.to_string(),
+                        line: name.line,
+                        column: name.column,
+                    });
+                }
             }
             Expression::Binary {
                 left,
                 operator,
                 right,
             } => {
-                self.get_current_symbol_table()?.add_symbol(Symbol::new(
-                    &operator.token_kind.to_string(),
-                    SymbolKind::BuiltIn,
-                ))?;
-
                 self.visit_expression(left)?;
-                self.visit_expression(right)
-            }
-            Expression::Grouping { expression } => self.visit_expression(expression),
-            Expression::Assignment { name, value } => {
-                self.visit_expression(value)?;
 
-                self.get_current_symbol_table()?.add_symbol(Symbol::new(
-                    &name.token_kind.to_string(),
-                    SymbolKind::Variable,
-                ))
+                // Make sure the operator makes sense.
+                match operator.token_kind {
+                    TokenKind::Plus | TokenKind::Minus | TokenKind::Star | TokenKind::Slash => {
+                        self.visit_expression(right)?;
+                    }
+                    TokenKind::Equality
+                    | TokenKind::NotEqual
+                    | TokenKind::LessThan
+                    | TokenKind::LessThanOrEqual
+                    | TokenKind::GreaterThan
+                    | TokenKind::GreaterThanOrEqual => {}
+                    _ => {
+                        return Err(Error::InvalidOperator {
+                            operator: operator.token_kind.to_string(),
+                            line: operator.line,
+                            column: operator.column,
+                        });
+                    }
+                }
             }
-            Expression::Variable { name } => {
-                self.get_current_symbol_table()?
-                    .get_symbol(&name.token_kind.to_string())?;
-
-                Ok(())
+            Expression::Unary { operator, right } => {
+                // Make sure the operator makes sense.
+                match operator.token_kind {
+                    TokenKind::Plus | TokenKind::Minus | TokenKind::LogicalNot => {
+                        self.visit_expression(right)?;
+                    }
+                    _ => {
+                        return Err(Error::InvalidOperator {
+                            operator: operator.token_kind.to_string(),
+                            line: operator.line,
+                            column: operator.column,
+                        });
+                    }
+                }
             }
             Expression::Call { callee, arguments } => {
                 self.visit_expression(callee)?;
@@ -232,48 +315,12 @@ impl<'a> Semantics<'a> {
                 for argument in arguments {
                     self.visit_expression(argument)?;
                 }
-
-                Ok(())
+            }
+            Expression::Grouping { expression } => {
+                self.visit_expression(expression)?;
             }
         }
-    }
 
-    fn visit_literal(&mut self, literal: &'a Literal) -> Result<(), Error> {
-        let symbol = match literal {
-            Literal::String(string) => Symbol::new(string, SymbolKind::BuiltIn),
-            Literal::Number(number) => Symbol::new(&number.to_string(), SymbolKind::BuiltIn),
-            Literal::Boolean(boolean) => Symbol::new(&boolean.to_string(), SymbolKind::BuiltIn),
-        };
-
-        self.get_current_symbol_table()?.add_symbol(symbol)
-    }
-
-    /// Gets the current scope.
-    ///
-    /// # Returns
-    ///
-    /// * `Result<&SymbolTable, Error>` - The current scope.
-    fn get_current_symbol_table(&mut self) -> Result<&mut SymbolTable, Error> {
-        match self.scopes.get_mut(&self.current_scope) {
-            Some(symbol_table) => Ok(symbol_table),
-            None => Err(Error::ScopeNotDefined {
-                scope: self.current_scope.clone(),
-            }),
-        }
-    }
-
-    /// Updates the current scope.
-    fn update_current_scope(&mut self) {
-        self.current_scope = Scope::Child(Box::new(self.current_scope.clone()));
-        self.scopes
-            .insert(self.current_scope.clone(), SymbolTable::default());
-    }
-
-    /// Reverts the current scope to its parent.
-    fn revert_current_scope(&mut self) {
-        self.current_scope = match &self.current_scope {
-            Scope::Child(parent) => *parent.clone(),
-            Scope::Root => Scope::Root,
-        };
+        Ok(())
     }
 }

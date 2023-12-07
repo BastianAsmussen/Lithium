@@ -1,5 +1,5 @@
 use clap::Parser;
-use lang::semantics::Semantics;
+use lang::semantics::SemanticAnalyzer;
 
 /// The Lithium compiler CLI.
 #[derive(Debug, Parser)]
@@ -58,7 +58,7 @@ fn main() {
     println!("AST: {ast:#?}");
     println!("Parsing took {elapsed:#?}.");
 
-    let mut semantics = Semantics::new(&ast);
+    let mut semantics = SemanticAnalyzer::new(&ast);
     let (result, elapsed) = {
         let start = std::time::Instant::now();
 
@@ -73,6 +73,6 @@ fn main() {
         }
     }
 
-    println!("Scope: {semantics:#?}");
+    println!("Semantics: {semantics:#?}");
     println!("Semantic analysis took {elapsed:#?}.");
 }
