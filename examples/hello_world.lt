@@ -1,4 +1,4 @@
-fn print(s: str) {}
+fn print(s: str) { /* ... */ }
 
 // This is a comment.
 fn greet(name: str) -> str {
